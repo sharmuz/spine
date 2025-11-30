@@ -2,20 +2,25 @@
 
 Or, more like a list of issues and features I may address at some point :)
 
-## Changing state of a book
+# v0.1
 
-- What: Users should be able to change a book from "want" to "read"
-- Why: Basic feature to be taken seriously
-- How: Need to match correct book...by exact title? by internal ID? Fuzzy matches with selection?
+- User can `add`, `show` books in their library
+- Library is persisted locally in a `spine.json` file (in cwd)
+- Books can have: title, author, isbn (optional) uid
+- Books can also have a status (mutually exclusive): want, reading, read
 
-## Get book info
+# v0.2
 
-- What: Users can add books by title or ISBN but spline should fill in the rest of the data.
-- Why: Only storing data that users enter will be of limited use, users will expect to see author and other metadata.
-- How: Via a suitable API? Mandatory or optional? User supplies key? Select from list of matches?
+- User can `remove` books from their library
+- Books can have status updated, e.g. want --> reading
+- Book details can be edited/added (title, author, isbn)
+- Removal/editing/updating are done via book uid
+- Library file can be at any user-provided path, with several defaults checked
 
-## Local storage
+# v0.3
+- User can `tag` books with custom tags, multiple per book possible
+- Searching using `show` with author, title, isbn and/or custom tags
 
-- What: Persistent storage of users' books.
-- Why: Data needs to be stored somewhere!
-- How: Flat file? CSV? Option to export from one to other?
+# Beyond
+- An API service (which?) can be used to `validate` books - adding/correcting data
+- Utilise Hardcover.app API (TBD)
