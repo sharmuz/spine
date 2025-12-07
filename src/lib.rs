@@ -15,6 +15,25 @@ impl Book {
     }
 }
 
+#[derive(Debug, Default, PartialEq)]
+pub struct Library {
+    books: Vec<Book>,
+}
+
+impl Library {
+    pub fn new() -> Self {
+        Library { books: Vec::new() }
+    }
+
+    pub fn add(&mut self, title: &str, author: &str, isbn: Option<&str>) {
+        ()
+    }
+
+    pub fn show(&self) -> String {
+        String::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
