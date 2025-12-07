@@ -1,18 +1,28 @@
 use std::fmt::{self, Display};
 
+#[derive(Debug, Default, PartialEq, Eq)]
+pub enum Status {
+    #[default]
+    Want,
+    Reading,
+    Read,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct Book {
     title: String,
     author: String,
     isbn: Option<String>,
+    status: Status,
 }
 
 impl Book {
-    pub fn new(title: &str, author: &str, isbn: Option<&str>) -> Self {
+    pub fn new(title: &str, author: &str, isbn: Option<&str>, status: Status) -> Self {
         Self {
             title: title.to_owned(),
             author: author.to_owned(),
             isbn: isbn.map(String::from),
+            status: status,
         }
     }
 }
@@ -34,8 +44,8 @@ impl Library {
         Self { books: Vec::new() }
     }
 
-    pub fn add(&mut self, title: &str, author: &str, isbn: Option<&str>) {
-        let book = Book::new(title, author, isbn);
+    pub fn add(&mut self, title: &str, author: &str, isbn: Option<&str>, status: Option<Status>) {
+        let book = Book::new(title, author, isbn, status.unwrap_or_default());
         self.books.push(book);
     }
 
@@ -55,7 +65,12 @@ mod tests {
 
     #[test]
     fn test_new_creates_new_book() {
-        let _book = Book::new("paradise lost", "milton", Some("97812345"));
+        let _book = Book::new(
+            "paradise lost",
+            "milton",
+            Some("97812345"),
+            Status::Read,
+        );
     }
 
     #[test]
@@ -65,12 +80,13 @@ mod tests {
             title: "the tale of genji".to_owned(),
             author: "murasaki shikibu".to_owned(),
             isbn: None,
+            status: Status::Want,
         };
         let expected = Library {
             books: vec![my_book],
         };
 
-        my_lib.add("the tale of genji", "murasaki shikibu", None);
+        my_lib.add("the tale of genji", "murasaki shikibu", None, None);
 
         assert_eq!(my_lib, expected);
     }
@@ -78,8 +94,13 @@ mod tests {
     #[test]
     fn show_shows_all_books() {
         let mut my_lib = Library::new();
-        my_lib.add("1984", "george orwell", None);
-        my_lib.add("kim", "rudyard kipling", Some("97812345"));
+        my_lib.add("1984", "george orwell", None, None);
+        my_lib.add(
+            "kim",
+            "rudyard kipling",
+            Some("97812345"),
+            Some(Status::Read),
+        );
         let expected = "1984, george orwell\nkim, rudyard kipling";
 
         let show_all = my_lib.show();
