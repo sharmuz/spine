@@ -1,6 +1,6 @@
 use std::fmt::{self, Display};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Book {
     title: String,
     author: String,
@@ -23,14 +23,15 @@ impl Display for Book {
     }
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct Library {
     books: Vec<Book>,
 }
 
 impl Library {
+    #[must_use]
     pub fn new() -> Self {
-        Library { books: Vec::new() }
+        Self { books: Vec::new() }
     }
 
     pub fn add(&mut self, title: &str, author: &str, isbn: Option<&str>) {
@@ -38,6 +39,7 @@ impl Library {
         self.books.push(book);
     }
 
+    #[must_use]
     pub fn show(&self) -> String {
         self.books
             .iter()
