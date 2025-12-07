@@ -1,3 +1,5 @@
+use std::fmt::{self, Display};
+
 #[derive(Debug, PartialEq)]
 pub struct Book {
     title: String,
@@ -12,6 +14,12 @@ impl Book {
             author: author.to_owned(),
             isbn: isbn.map(String::from),
         }
+    }
+}
+
+impl Display for Book {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}, {}", self.title, self.author)
     }
 }
 
@@ -31,7 +39,11 @@ impl Library {
     }
 
     pub fn show(&self) -> String {
-        String::new()
+        self.books
+            .iter()
+            .map(|b| format!("{b}"))
+            .collect::<Vec<String>>()
+            .join("\n")
     }
 }
 
@@ -59,5 +71,17 @@ mod tests {
         my_lib.add("the tale of genji", "murasaki shikibu", None);
 
         assert_eq!(my_lib, expected);
+    }
+
+    #[test]
+    fn show_shows_all_books() {
+        let mut my_lib = Library::new();
+        my_lib.add("1984", "george orwell", None);
+        my_lib.add("kim", "rudyard kipling", Some("97812345"));
+        let expected = "1984, george orwell\nkim, rudyard kipling";
+
+        let show_all = my_lib.show();
+
+        assert_eq!(show_all, expected);
     }
 }

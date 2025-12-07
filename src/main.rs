@@ -1,4 +1,8 @@
+use spine::Library;
+
 fn main() {
-    let my_book = spine::Book::new("burmese days", "george orwell", Some("9780123456789"));
-    println!("{:#?}", my_book);
+    let mut my_lib = Library::new();
+    my_lib.add("burmese days", "george orwell", Some("9780123456789"));
+    my_lib.add("norwegian wood", "haruki murakami", None);
+    println!("Books in your library:\n\n{}", my_lib.show());
 }
