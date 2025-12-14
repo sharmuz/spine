@@ -1,6 +1,13 @@
-use std::fmt::{self, Display};
+use serde::{Deserialize, Serialize};
+use std::{
+    error::Error,
+    fmt::{self, Display},
+    fs::{File, OpenOptions},
+    io::{BufReader, BufWriter},
+    path::Path,
+};
 
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Status {
     #[default]
     Want,
@@ -8,7 +15,7 @@ pub enum Status {
     Read,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Book {
     title: String,
     author: String,
@@ -33,7 +40,7 @@ impl Display for Book {
     }
 }
 
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Library {
     books: Vec<Book>,
 }
@@ -57,20 +64,37 @@ impl Library {
             .collect::<Vec<String>>()
             .join("\n")
     }
+
+    pub fn save(&self, path: impl AsRef<Path>) -> Result<(), Box<dyn Error>> {
+        let file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(path)?;
+        let buf = BufWriter::new(file);
+
+        serde_json::to_writer(buf, self)?;
+
+        Ok(())
+    }
+
+    pub fn open(path: impl AsRef<Path>) -> Result<Self, Box<dyn Error>> {
+        let file = File::open(path)?;
+        let buf = BufReader::new(file);
+        let deserialized: Library = serde_json::from_reader(buf)?;
+
+        Ok(deserialized)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
 
     #[test]
     fn test_new_creates_new_book() {
-        let _book = Book::new(
-            "paradise lost",
-            "milton",
-            Some("97812345"),
-            Status::Read,
-        );
+        let _book = Book::new("paradise lost", "milton", Some("97812345"), Status::Read);
     }
 
     #[test]
@@ -106,5 +130,24 @@ mod tests {
         let show_all = my_lib.show();
 
         assert_eq!(show_all, expected);
+    }
+
+    #[test]
+    fn save_then_open_restores_library() {
+        let tmp_dir = tempdir().unwrap();
+        let file_path = tmp_dir.path().join("my_library.json");
+        let mut my_lib = Library::new();
+        my_lib.add("1984", "george orwell", None, None);
+        my_lib.add(
+            "kim",
+            "rudyard kipling",
+            Some("97812345"),
+            Some(Status::Read),
+        );
+
+        my_lib.save(&file_path).unwrap();
+        let opened = Library::open(&file_path).unwrap();
+
+        assert_eq!(opened, my_lib, "wrong data");
     }
 }
