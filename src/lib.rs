@@ -118,14 +118,14 @@ mod tests {
     #[test]
     fn show_shows_all_books() {
         let mut my_lib = Library::new();
-        my_lib.add("1984", "george orwell", None, None);
+        my_lib.add("burmese days", "george orwell", None, None);
         my_lib.add(
             "kim",
             "rudyard kipling",
             Some("97812345"),
             Some(Status::Read),
         );
-        let expected = "1984, george orwell\nkim, rudyard kipling";
+        let expected = "burmese days, george orwell\nkim, rudyard kipling";
 
         let show_all = my_lib.show();
 
@@ -137,7 +137,7 @@ mod tests {
         let tmp_dir = tempdir().unwrap();
         let file_path = tmp_dir.path().join("my_library.json");
         let mut my_lib = Library::new();
-        my_lib.add("1984", "george orwell", None, None);
+        my_lib.add("burmese days", "george orwell", None, None);
         my_lib.add(
             "kim",
             "rudyard kipling",
