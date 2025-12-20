@@ -29,7 +29,7 @@ impl Book {
             title: title.to_owned(),
             author: author.to_owned(),
             isbn: isbn.map(String::from),
-            status: status,
+            status,
         }
     }
 }
@@ -51,11 +51,13 @@ impl Library {
         Self { books: Vec::new() }
     }
 
+    /// Adds a new book to the library.
     pub fn add(&mut self, title: &str, author: &str, isbn: Option<&str>, status: Option<Status>) {
         let book = Book::new(title, author, isbn, status.unwrap_or_default());
         self.books.push(book);
     }
 
+    /// Shows all books in the library.
     #[must_use]
     pub fn show(&self) -> String {
         self.books
@@ -65,6 +67,7 @@ impl Library {
             .join("\n")
     }
 
+    /// Saves the library to a file.
     pub fn save(&self, path: impl AsRef<Path>) -> Result<(), Box<dyn Error>> {
         let file = OpenOptions::new()
             .create(true)
@@ -78,10 +81,11 @@ impl Library {
         Ok(())
     }
 
+    /// Opens the library from a file.
     pub fn open(path: impl AsRef<Path>) -> Result<Self, Box<dyn Error>> {
         let file = File::open(path)?;
         let buf = BufReader::new(file);
-        let deserialized: Library = serde_json::from_reader(buf)?;
+        let deserialized: Self = serde_json::from_reader(buf)?;
 
         Ok(deserialized)
     }
