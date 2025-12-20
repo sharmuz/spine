@@ -1,24 +1,50 @@
 use std::{error::Error, path::Path};
 
+use clap::{Parser, Subcommand};
+
 use spine::Library;
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let path = Path::new("spine.json");
+#[derive(Parser)]
+#[command(name = "spine")]
+#[command(about = "Your personal command-line librarian!", long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
 
-    let my_lib= if path.exists() {
+#[derive(Subcommand)]
+enum Commands {
+    /// Show your books
+    Show,
+    /// Add a new book
+    Add {
+        #[arg(required = true)]
+        title: String,
+        #[arg(required = true)]
+        author: String,
+    },
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let args = Cli::parse();
+
+    let path = Path::new("spine.json");
+    let mut my_lib = if path.exists() {
         Library::open(&path)?
     } else {
-        let mut my_lib = Library::new();
-        my_lib.add("hadji murat", "leo tolstoy", Some("9780123456789"), None);
-        my_lib.add(
-            "norwegian wood",
-            "haruki murakami",
-            None,
-            Some(spine::Status::Read),
-        );
-        my_lib.save(&path)?;
-        my_lib
+        Library::new()
     };
-    println!("Books in your library:\n\n{}", my_lib.show());
+
+    match args.command {
+        Commands::Show => {
+            println!("Books in your library:\n\n{}", my_lib.show());
+        }
+        Commands::Add { title, author } => {
+            my_lib.add(&title, &author, None, None);
+            my_lib.save(&path)?;
+            println!("Book added!")
+        }
+    }
+
     Ok(())
 }
