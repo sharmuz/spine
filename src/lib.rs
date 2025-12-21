@@ -97,12 +97,12 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
-    fn test_new_creates_new_book() {
+    fn new_creates_new_book() {
         let _book = Book::new("paradise lost", "milton", Some("97812345"), Status::Read);
     }
 
     #[test]
-    fn test_add_adds_new_book_without_isbn() {
+    fn add_adds_new_book_without_isbn() {
         let mut my_lib = Library::new();
         let my_book = Book {
             title: "the tale of genji".to_owned(),
