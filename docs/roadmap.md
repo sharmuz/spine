@@ -2,28 +2,24 @@
 
 Or, more like a list of issues and features I may address at some point :)
 
-## v0.1
-
-- User can `add`, `show` books in their library
-- Books can also have a status (mutually exclusive): want, reading, read
-- Books can have: title, author, isbn (optional) uid
-- Library is persisted locally in a `spine.json` file (in cwd)
-- Basic CLI
-
-
 ## v0.2
 
+- Restructure crate
+- Books each have a uid
 - User can `remove` books from their library
 - Books can have status updated, e.g. want --> reading
 - Book details can be edited/added (title, author, isbn)
 - Removal/editing/updating are done via book uid
-- Library file can be at any user-provided path, with several defaults checked
 
 ## v0.3
+- Library file can be at any user-provided path, with several defaults checked
 - User can `tag` books with custom tags, multiple per book possible
 - Searching using `show` with author, title, isbn and/or custom tags
 
 ## Beyond
-- An API service (which?) can be used to `validate` books - adding/correcting data
-- Utilise Hardcover.app API (TBD)
+- More metadata: date read, publisher, translator, edition, etc.
 - More robust metadata handling via custom types for title/author/isbn
+- Import/export from/to format compatible with Hardcover/Goodreads/Storygraph
+- Leverage an API service (which?) to `validate` books - adding/correcting data
+- Utilise Hardcover.app API in other ways (TBD)
+- TUI using ratatui
