@@ -6,13 +6,13 @@ spine is a simple CLI tool for managing your book collection. It can store your 
 
 ```shell
 # Add a new book you've read!
-spine add --read "the great gatsby"
+spine add --read "the great gatsby" "f. scott fitzgerald"
 
 # Add another two you want to read
-spine add --want "blood meridian"
+spine add --want "blood meridian" "cormac mccarthy"
 
 # See your all books!
-spine show --all
+spine show
 ```
 
 ## Installation
@@ -28,17 +28,14 @@ cargo install --locked spine-books
 ### Adding a new book
 
 ```shell
-# Add a new book you've read by title
-spine add --read "the great gatsby"
-
-# Add multiple books at once (neither read nor wanted for now!)
-spine add "sense and sensibility" "mansfield park" "emma"
-
-# Or add by ISBN!
-spine add --read "9781847496140"
+# Add a new book you've read by title (by default marked as want)
+spine add "sense and sensibility" "jane austen"
 
 # Add a book you want to read
-spine add --want "animal farm"
+spine add --want "animal farm" "george orwell"
+
+# Optionally include ISBN
+spine add --read "the great gatsby" "f. scott fitzgerald" "9781847496140"
 ```
 
 ### Tag your books
