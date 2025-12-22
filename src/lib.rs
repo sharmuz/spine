@@ -27,6 +27,21 @@ impl Library {
         self.books.push(book);
     }
 
+    /// Searches library for books.
+    pub fn search(
+        &self,
+        title: Option<&str>,
+        _author: Option<&str>,
+        _isbn: Option<&str>,
+    ) -> Vec<&Book> {
+        let mut hits: Vec<&Book> = Vec::new();
+        if let Some(title) = title {
+            let title_hits = self.books.iter().filter(|b| b.title.contains(title));
+            hits.extend(title_hits);
+        }
+        hits
+    }
+
     /// Shows all books in the library.
     #[must_use]
     pub fn show(&self) -> String {
@@ -77,6 +92,49 @@ mod tests {
         my_lib.add("the tale of genji", "murasaki shikibu", None, None);
 
         assert_eq!(my_lib, expected);
+    }
+
+    #[test]
+    fn search_finds_single_match_by_title() {
+        let mut my_lib = Library::new();
+        my_lib.add("burmese days", "george orwell", None, None);
+        my_lib.add(
+            "kim",
+            "rudyard kipling",
+            Some("97812345"),
+            Some(Status::Read),
+        );
+        let my_book = Book::new("burmese days", "george orwell", None, Status::Want);
+        let expected = vec![&my_book];
+
+        let search_hits = my_lib.search(Some("burmese"), None, None);
+
+        assert_eq!(search_hits, expected);
+    }
+
+    #[test]
+    fn search_finds_multiple_matches_by_title() {
+        let mut my_lib = Library::new();
+        my_lib.add("burmese days", "george orwell", None, None);
+        my_lib.add(
+            "kim",
+            "rudyard kipling",
+            Some("97812345"),
+            Some(Status::Read),
+        );
+        my_lib.add("around the world in eighty days", "jules verne", None, None);
+        let book_one = Book::new("burmese days", "george orwell", None, Status::Want);
+        let book_two = Book::new(
+            "around the world in eighty days",
+            "jules verne",
+            None,
+            Status::Want,
+        );
+        let expected = vec![&book_one, &book_two];
+
+        let search_hits = my_lib.search(Some("days"), None, None);
+
+        assert_eq!(search_hits, expected);
     }
 
     #[test]

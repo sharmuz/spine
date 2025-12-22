@@ -11,9 +11,9 @@ pub enum Status {
 
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Book {
-    title: String,
-    author: String,
-    isbn: Option<String>,
+    pub(crate) title: String,
+    pub(crate) author: String,
+    pub(crate) isbn: Option<String>,
     status: Status,
 }
 
