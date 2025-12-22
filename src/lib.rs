@@ -1,44 +1,14 @@
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
-    fmt::{self, Display},
     fs::{File, OpenOptions},
     io::{BufReader, BufWriter},
     path::Path,
 };
 
-#[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
-pub enum Status {
-    #[default]
-    Want,
-    Reading,
-    Read,
-}
+pub use crate::book::{Book, Status};
 
-#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct Book {
-    title: String,
-    author: String,
-    isbn: Option<String>,
-    status: Status,
-}
-
-impl Book {
-    pub fn new(title: &str, author: &str, isbn: Option<&str>, status: Status) -> Self {
-        Self {
-            title: title.to_owned(),
-            author: author.to_owned(),
-            isbn: isbn.map(String::from),
-            status,
-        }
-    }
-}
-
-impl Display for Book {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}, {}", self.title, self.author)
-    }
-}
+pub mod book;
 
 #[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Library {
@@ -97,19 +67,9 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
-    fn new_creates_new_book() {
-        let _book = Book::new("paradise lost", "milton", Some("97812345"), Status::Read);
-    }
-
-    #[test]
     fn add_adds_new_book_without_isbn() {
         let mut my_lib = Library::new();
-        let my_book = Book {
-            title: "the tale of genji".to_owned(),
-            author: "murasaki shikibu".to_owned(),
-            isbn: None,
-            status: Status::Want,
-        };
+        let my_book = Book::new("the tale of genji", "murasaki shikibu", None, Status::Want);
         let expected = Library {
             books: vec![my_book],
         };
