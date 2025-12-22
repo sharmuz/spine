@@ -96,14 +96,7 @@ mod tests {
 
     #[test]
     fn search_finds_single_match_by_title() {
-        let mut my_lib = Library::new();
-        my_lib.add("burmese days", "george orwell", None, None);
-        my_lib.add(
-            "kim",
-            "rudyard kipling",
-            Some("97812345"),
-            Some(Status::Read),
-        );
+        let my_lib = library_with_two_books();
         let my_book = Book::new("burmese days", "george orwell", None, Status::Want);
         let expected = vec![&my_book];
 
@@ -114,14 +107,7 @@ mod tests {
 
     #[test]
     fn search_finds_multiple_matches_by_title() {
-        let mut my_lib = Library::new();
-        my_lib.add("burmese days", "george orwell", None, None);
-        my_lib.add(
-            "kim",
-            "rudyard kipling",
-            Some("97812345"),
-            Some(Status::Read),
-        );
+        let mut my_lib = library_with_two_books();
         my_lib.add("around the world in eighty days", "jules verne", None, None);
         let book_one = Book::new("burmese days", "george orwell", None, Status::Want);
         let book_two = Book::new(
@@ -139,14 +125,7 @@ mod tests {
 
     #[test]
     fn show_shows_all_books() {
-        let mut my_lib = Library::new();
-        my_lib.add("burmese days", "george orwell", None, None);
-        my_lib.add(
-            "kim",
-            "rudyard kipling",
-            Some("97812345"),
-            Some(Status::Read),
-        );
+        let my_lib = library_with_two_books();
         let expected = "burmese days, george orwell\nkim, rudyard kipling";
 
         let show_all = my_lib.show();
@@ -158,6 +137,15 @@ mod tests {
     fn save_then_open_restores_library() {
         let tmp_dir = tempdir().unwrap();
         let file_path = tmp_dir.path().join("my_library.json");
+        let my_lib = library_with_two_books();
+
+        my_lib.save(&file_path).unwrap();
+        let opened = Library::open(&file_path).unwrap();
+
+        assert_eq!(opened, my_lib, "wrong data");
+    }
+
+    fn library_with_two_books() -> Library {
         let mut my_lib = Library::new();
         my_lib.add("burmese days", "george orwell", None, None);
         my_lib.add(
@@ -166,10 +154,6 @@ mod tests {
             Some("97812345"),
             Some(Status::Read),
         );
-
-        my_lib.save(&file_path).unwrap();
-        let opened = Library::open(&file_path).unwrap();
-
-        assert_eq!(opened, my_lib, "wrong data");
+        my_lib
     }
 }
