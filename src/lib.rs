@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
     fs::{File, OpenOptions},
-    io::{BufReader, BufWriter},
+    io::{self, BufReader, BufWriter},
     path::Path,
 };
 
@@ -25,6 +25,33 @@ impl Library {
     pub fn add(&mut self, title: &str, author: &str, isbn: Option<&str>, status: Option<Status>) {
         let book = Book::new(title, author, isbn, status.unwrap_or_default());
         self.books.push(book);
+    }
+
+    /// Removes a book from the library
+    pub fn remove(
+        &mut self,
+        title: Option<&str>,
+        author: Option<&str>,
+        isbn: Option<&str>,
+    ) -> Result<(), io::Error> {
+        let hits = self.search(title, author, isbn);
+        if hits.is_empty() {
+            return Err(io::Error::new(io::ErrorKind::Other, "No books found."));
+        } else if hits.len() > 1 {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "Found multiple books. Please be more specific.",
+            ));
+        }
+
+        let rm_idx = self
+            .books
+            .iter()
+            .position(|b| b == hits[0])
+            .ok_or(io::Error::new(io::ErrorKind::Other, "No books found."))?;
+
+        self.books.remove(rm_idx);
+        Ok(())
     }
 
     /// Searches library for books.
@@ -98,6 +125,36 @@ mod tests {
         my_lib.add("the tale of genji", "murasaki shikibu", None, None);
 
         assert_eq!(my_lib, expected);
+    }
+
+    #[test]
+    fn remove_removes_book_from_library() {
+        let mut my_lib = library_with_two_books();
+        let mut expected = Library::new();
+        expected.add("burmese days", "george orwell", None, None);
+
+        my_lib.remove(Some("kim"), None, None).unwrap();
+
+        assert_eq!(my_lib, expected);
+    }
+
+    #[test]
+    fn remove_throws_error_if_multiple_matches() {
+        let mut my_lib = library_with_two_books();
+        my_lib.add("around the world in eighty days", "jules verne", None, None);
+        
+        let err = my_lib.remove(Some("days"), None, None).unwrap_err();
+
+        assert!(err.to_string().contains("Found multiple books."));
+    }
+
+    #[test]
+    fn remove_throws_error_if_no_matches() {
+        let mut my_lib = library_with_two_books();
+        
+        let err = my_lib.remove(Some("1984"), None, None).unwrap_err();
+
+        assert!(err.to_string().contains("No books found."));
     }
 
     #[test]
