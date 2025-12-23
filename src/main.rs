@@ -1,6 +1,6 @@
 use std::{error::Error, path::Path};
 
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 
 use spine::{Library, Status};
 
@@ -35,6 +35,22 @@ enum Commands {
         #[arg(long, group = "status")]
         read: bool,
     },
+
+    // Remove an existing book
+    Remove(RemoveArgs),
+}
+
+#[derive(Args)]
+#[group(required = true, multiple = true)]
+struct RemoveArgs {
+    #[arg(short, long)]
+    title: Option<String>,
+
+    #[arg(short, long)]
+    author: Option<String>,
+
+    #[arg(short, long)]
+    isbn: Option<String>,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -69,6 +85,24 @@ fn main() -> Result<(), Box<dyn Error>> {
             my_lib.add(&title, &author, isbn.as_deref(), Some(status));
             my_lib.save(path)?;
             println!("Book added!");
+        }
+        // Commands::Remove {
+        //     title,
+        //     author,
+        //     isbn,
+        // } => {
+        // my_lib.remove(title.as_deref(), author.as_deref(), isbn.as_deref())?;
+        // my_lib.save(path)?;
+        // println!("Book removed from your library.");
+        // }
+        Commands::Remove(rm_args) => {
+            my_lib.remove(
+                rm_args.title.as_deref(),
+                rm_args.author.as_deref(),
+                rm_args.isbn.as_deref(),
+            )?;
+            my_lib.save(path)?;
+            println!("Book removed from your library.");
         }
     }
 
