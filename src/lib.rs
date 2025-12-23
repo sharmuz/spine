@@ -31,15 +31,21 @@ impl Library {
     pub fn search(
         &self,
         title: Option<&str>,
-        _author: Option<&str>,
-        _isbn: Option<&str>,
+        author: Option<&str>,
+        isbn: Option<&str>,
     ) -> Vec<&Book> {
-        let mut hits: Vec<&Book> = Vec::new();
-        if let Some(title) = title {
-            let title_hits = self.books.iter().filter(|b| b.title.contains(title));
-            hits.extend(title_hits);
+        match (title, author, isbn) {
+            (None, None, None) => Vec::new(),
+            (_, _, _) => self
+                .books
+                .iter()
+                .filter(|&b| {
+                    title.is_none_or(|t| b.title.contains(t))
+                        & author.is_none_or(|a| b.author.contains(a))
+                        & isbn.is_none_or(|c| b.isbn.as_ref().is_some_and(|i| i.contains(c)))
+                })
+                .collect(),
         }
-        hits
     }
 
     /// Shows all books in the library.
@@ -124,6 +130,78 @@ mod tests {
     }
 
     #[test]
+    fn search_finds_multiple_matches_by_author() {
+        let mut my_lib = library_with_two_books();
+        my_lib.add("felix holt, the radical", "george eliot", None, None);
+        let book_one = Book::new("burmese days", "george orwell", None, Status::Want);
+        let book_two = Book::new(
+            "felix holt, the radical",
+            "george eliot",
+            None,
+            Status::Want,
+        );
+        let expected = vec![&book_one, &book_two];
+
+        let search_hits = my_lib.search(None, Some("george"), None);
+
+        assert_eq!(search_hits, expected);
+    }
+
+    #[test]
+    fn search_finds_single_match_by_isbn() {
+        let my_lib = library_with_two_books();
+        let my_book = Book::new(
+            "kim",
+            "rudyard kipling",
+            Some("9780199536467"),
+            Status::Read,
+        );
+
+        let expected = vec![&my_book];
+
+        let search_hits = my_lib.search(None, None, Some("9780199536467"));
+
+        assert_eq!(search_hits, expected);
+    }
+
+    #[test]
+    fn search_finds_single_match_by_title_and_isbn() {
+        let my_lib = library_with_two_books();
+        let my_book = Book::new(
+            "kim",
+            "rudyard kipling",
+            Some("9780199536467"),
+            Status::Read,
+        );
+
+        let expected = vec![&my_book];
+
+        let search_hits = my_lib.search(Some("kim"), None, Some("9780199536467"));
+
+        assert_eq!(search_hits, expected);
+    }
+
+    #[test]
+    fn search_finds_nothing_by_title() {
+        let my_lib = library_with_two_books();
+        let expected: Vec<&Book> = Vec::new();
+
+        let search_hits = my_lib.search(Some("1984"), None, None);
+
+        assert_eq!(search_hits, expected);
+    }
+
+    #[test]
+    fn search_finds_nothing_by_nothing() {
+        let my_lib = library_with_two_books();
+        let expected: Vec<&Book> = Vec::new();
+
+        let search_hits = my_lib.search(None, None, None);
+
+        assert_eq!(search_hits, expected);
+    }
+
+    #[test]
     fn show_shows_all_books() {
         let my_lib = library_with_two_books();
         let expected = "burmese days, george orwell\nkim, rudyard kipling";
@@ -151,7 +229,7 @@ mod tests {
         my_lib.add(
             "kim",
             "rudyard kipling",
-            Some("97812345"),
+            Some("9780199536467"),
             Some(Status::Read),
         );
         my_lib
