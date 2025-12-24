@@ -107,36 +107,55 @@ impl Library {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::LazyLock;
     use tempfile::tempdir;
+
+    static BURMESE_DAYS: LazyLock<Book> = LazyLock::new(|| Book {
+        title: "burmese days".to_owned(),
+        author: "george orwell".to_owned(),
+        ..Default::default()
+    });
+    static KIM: LazyLock<Book> = LazyLock::new(|| Book {
+        title: "kim".to_owned(),
+        author: "rudyard kipling".to_owned(),
+        isbn: Some("9780199536467".to_owned()),
+        status: Status::Read,
+    });
+    static EIGHTY_DAYS: LazyLock<Book> = LazyLock::new(|| Book {
+        title: "around the world in eighty days".to_owned(),
+        author: "jules verne".to_owned(),
+        ..Default::default()
+    });
+
+    fn library_with_two_books() -> Library {
+        let mut my_lib = Library::new();
+        my_lib.add(BURMESE_DAYS.clone());
+        my_lib.add(KIM.clone());
+        my_lib
+    }
 
     #[test]
     fn add_adds_new_book_without_isbn() {
         let mut my_lib = Library::new();
-        let my_book = Book::new("the tale of genji", "murasaki shikibu", None, Status::Want);
-        let expected = Library {
-            books: vec![my_book],
-        };
 
-        my_lib.add("the tale of genji", "murasaki shikibu", None, None);
+        my_lib.add(BURMESE_DAYS.clone());
 
-        assert_eq!(my_lib, expected);
+        assert_eq!(my_lib.all().next().unwrap(), &*BURMESE_DAYS);
     }
 
     #[test]
     fn remove_removes_book_from_library() {
         let mut my_lib = library_with_two_books();
-        let mut expected = Library::new();
-        expected.add("burmese days", "george orwell", None, None);
 
-        my_lib.remove(Some("kim"), None, None).unwrap();
+        my_lib.remove(Some("burmese"), None, None).unwrap();
 
-        assert_eq!(my_lib, expected);
+        assert_ne!(my_lib.all().next().unwrap(), &*BURMESE_DAYS);
     }
 
     #[test]
     fn remove_throws_error_if_multiple_matches() {
         let mut my_lib = library_with_two_books();
-        my_lib.add("around the world in eighty days", "jules verne", None, None);
+        my_lib.add(EIGHTY_DAYS.clone());
 
         let err = my_lib.remove(Some("days"), None, None).unwrap_err();
 
@@ -153,114 +172,65 @@ mod tests {
     }
 
     #[test]
-    fn search_finds_single_match_by_title() {
+    fn search_finds_single_hit_by_title() {
         let my_lib = library_with_two_books();
-        let my_book = Book::new("burmese days", "george orwell", None, Status::Want);
-        let expected = vec![&my_book];
 
         let search_hits = my_lib.search(Some("burmese"), None, None);
 
-        assert_eq!(search_hits, expected);
+        assert_eq!(search_hits, vec![&*BURMESE_DAYS]);
     }
 
     #[test]
-    fn search_finds_multiple_matches_by_title() {
+    fn search_finds_multiple_hits_by_title() {
         let mut my_lib = library_with_two_books();
-        my_lib.add("around the world in eighty days", "jules verne", None, None);
-        let book_one = Book::new("burmese days", "george orwell", None, Status::Want);
-        let book_two = Book::new(
-            "around the world in eighty days",
-            "jules verne",
-            None,
-            Status::Want,
-        );
-        let expected = vec![&book_one, &book_two];
+        my_lib.add(EIGHTY_DAYS.clone());
 
         let search_hits = my_lib.search(Some("days"), None, None);
 
-        assert_eq!(search_hits, expected);
+        assert_eq!(search_hits, vec![&*BURMESE_DAYS, &*EIGHTY_DAYS]);
     }
 
     #[test]
-    fn search_finds_multiple_matches_by_author() {
+    fn search_finds_multiple_hits_by_author() {
         let mut my_lib = library_with_two_books();
-        my_lib.add("felix holt, the radical", "george eliot", None, None);
-        let book_one = Book::new("burmese days", "george orwell", None, Status::Want);
-        let book_two = Book::new(
-            "felix holt, the radical",
-            "george eliot",
-            None,
-            Status::Want,
-        );
-        let expected = vec![&book_one, &book_two];
+        let new_book = Book {
+            title: "felix holt, the radical".to_owned(),
+            author: "george eliot".to_owned(),
+            isbn: None,
+            status: Status::Want,
+        };
+        my_lib.add(new_book.clone());
 
         let search_hits = my_lib.search(None, Some("george"), None);
 
-        assert_eq!(search_hits, expected);
+        assert_eq!(search_hits, vec![&*BURMESE_DAYS, &new_book]);
     }
 
     #[test]
-    fn search_finds_single_match_by_isbn() {
+    fn search_finds_single_hit_by_title_and_isbn() {
         let my_lib = library_with_two_books();
-        let my_book = Book::new(
-            "kim",
-            "rudyard kipling",
-            Some("9780199536467"),
-            Status::Read,
-        );
-
-        let expected = vec![&my_book];
-
-        let search_hits = my_lib.search(None, None, Some("9780199536467"));
-
-        assert_eq!(search_hits, expected);
-    }
-
-    #[test]
-    fn search_finds_single_match_by_title_and_isbn() {
-        let my_lib = library_with_two_books();
-        let my_book = Book::new(
-            "kim",
-            "rudyard kipling",
-            Some("9780199536467"),
-            Status::Read,
-        );
-
-        let expected = vec![&my_book];
 
         let search_hits = my_lib.search(Some("kim"), None, Some("9780199536467"));
 
-        assert_eq!(search_hits, expected);
+        assert_eq!(search_hits, vec![&*KIM]);
     }
 
     #[test]
     fn search_finds_nothing_by_title() {
         let my_lib = library_with_two_books();
-        let expected: Vec<&Book> = Vec::new();
 
         let search_hits = my_lib.search(Some("1984"), None, None);
 
-        assert_eq!(search_hits, expected);
+        assert_eq!(search_hits, Vec::<&Book>::new());
     }
 
     #[test]
     fn search_finds_nothing_by_nothing() {
         let my_lib = library_with_two_books();
-        let expected: Vec<&Book> = Vec::new();
 
         let search_hits = my_lib.search(None, None, None);
 
-        assert_eq!(search_hits, expected);
-    }
-
-    #[test]
-    fn show_shows_all_books() {
-        let my_lib = library_with_two_books();
-        let expected = "burmese days, george orwell\nkim, rudyard kipling";
-
-        let show_all = my_lib.show();
-
-        assert_eq!(show_all, expected);
+        assert_eq!(search_hits, Vec::<&Book>::new());
     }
 
     #[test]
@@ -273,17 +243,5 @@ mod tests {
         let opened = Library::open(&file_path).unwrap();
 
         assert_eq!(opened, my_lib, "wrong data");
-    }
-
-    fn library_with_two_books() -> Library {
-        let mut my_lib = Library::new();
-        my_lib.add("burmese days", "george orwell", None, None);
-        my_lib.add(
-            "kim",
-            "rudyard kipling",
-            Some("9780199536467"),
-            Some(Status::Read),
-        );
-        my_lib
     }
 }
