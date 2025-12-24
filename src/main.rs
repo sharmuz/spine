@@ -2,7 +2,7 @@ use std::{error::Error, path::Path};
 
 use clap::{Args, Parser, Subcommand};
 
-use spine::{Library, Status};
+use spine::{Book, Library, Status};
 
 #[derive(Parser)]
 #[command(name = "spine")]
@@ -82,19 +82,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             } else {
                 Status::Want
             };
-            my_lib.add(&title, &author, isbn.as_deref(), Some(status));
+            let my_book = Book {
+                title,
+                author,
+                isbn,
+                status,
+            };
+            my_lib.add(my_book);
             my_lib.save(path)?;
             println!("Book added!");
         }
-        // Commands::Remove {
-        //     title,
-        //     author,
-        //     isbn,
-        // } => {
-        // my_lib.remove(title.as_deref(), author.as_deref(), isbn.as_deref())?;
-        // my_lib.save(path)?;
-        // println!("Book removed from your library.");
-        // }
         Commands::Remove(rm_args) => {
             my_lib.remove(
                 rm_args.title.as_deref(),

@@ -22,8 +22,7 @@ impl Library {
     }
 
     /// Adds a new book to the library.
-    pub fn add(&mut self, title: &str, author: &str, isbn: Option<&str>, status: Option<Status>) {
-        let book = Book::new(title, author, isbn, status.unwrap_or_default());
+    pub fn add(&mut self, book: Book) {
         self.books.push(book);
     }
 
