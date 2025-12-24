@@ -4,6 +4,7 @@ use std::{
     fs::{File, OpenOptions},
     io::{self, BufReader, BufWriter},
     path::Path,
+    slice,
 };
 
 pub use crate::book::{Book, Status};
@@ -74,14 +75,10 @@ impl Library {
         }
     }
 
-    /// Shows all books in the library.
+    /// Returns an iterator over all books in the library.
     #[must_use]
-    pub fn show(&self) -> String {
-        self.books
-            .iter()
-            .map(|b| format!("{b}"))
-            .collect::<Vec<String>>()
-            .join("\n")
+    pub fn all(&self) -> slice::Iter<'_, Book> {
+        self.books.iter()
     }
 
     /// Saves the library to a file.
@@ -92,7 +89,6 @@ impl Library {
             .truncate(true)
             .open(path)?;
         let buf = BufWriter::new(file);
-
         serde_json::to_writer(buf, self)?;
 
         Ok(())
@@ -141,7 +137,7 @@ mod tests {
     fn remove_throws_error_if_multiple_matches() {
         let mut my_lib = library_with_two_books();
         my_lib.add("around the world in eighty days", "jules verne", None, None);
-        
+
         let err = my_lib.remove(Some("days"), None, None).unwrap_err();
 
         assert!(err.to_string().contains("Found multiple books."));
@@ -150,7 +146,7 @@ mod tests {
     #[test]
     fn remove_throws_error_if_no_matches() {
         let mut my_lib = library_with_two_books();
-        
+
         let err = my_lib.remove(Some("1984"), None, None).unwrap_err();
 
         assert!(err.to_string().contains("No books found."));

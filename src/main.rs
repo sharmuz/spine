@@ -65,7 +65,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match args.command {
         Commands::Show => {
-            println!("Books in your library:\n\n{}", my_lib.show());
+            println!("Books in your library:\n");
+            my_lib.all().for_each(|b| println!("{b}"));
         }
         Commands::Add {
             title,
