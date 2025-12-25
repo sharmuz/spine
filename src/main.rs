@@ -2,7 +2,7 @@ use std::{error::Error, path::Path};
 
 use clap::{Args, Parser, Subcommand};
 
-use spine::{Book, Library, Status};
+use spine::{Book, LibrarySearch, Library, Status};
 
 #[derive(Parser)]
 #[command(name = "spine")]
@@ -94,11 +94,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             println!("Book added!");
         }
         Commands::Remove(rm_args) => {
-            my_lib.remove(
-                rm_args.title.as_deref(),
-                rm_args.author.as_deref(),
-                rm_args.isbn.as_deref(),
-            )?;
+            my_lib.remove(LibrarySearch {
+                title: rm_args.title.as_deref(),
+                author: rm_args.author.as_deref(),
+                isbn: rm_args.isbn.as_deref(),
+            })?;
             my_lib.save(path)?;
             println!("Book removed from your library.");
         }

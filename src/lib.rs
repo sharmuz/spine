@@ -28,13 +28,8 @@ impl Library {
     }
 
     /// Removes a book from the library
-    pub fn remove(
-        &mut self,
-        title: Option<&str>,
-        author: Option<&str>,
-        isbn: Option<&str>,
-    ) -> Result<(), io::Error> {
-        let hits = self.search(title, author, isbn);
+    pub fn remove(&mut self, search: LibrarySearch) -> Result<(), io::Error> {
+        let hits = self.search(search);
         if hits.is_empty() {
             return Err(io::Error::new(io::ErrorKind::Other, "No books found."));
         } else if hits.len() > 1 {
@@ -57,10 +52,10 @@ impl Library {
     /// Updates status of a book in the library.
     pub fn update_status(
         &mut self,
-        search: (Option<&str>, Option<&str>, Option<&str>),
+        search: LibrarySearch,
         new_status: Status,
     ) -> Result<(), io::Error> {
-        let hits = self.search(search.0, search.1, search.2);
+        let hits = self.search(search);
         if hits.is_empty() {
             return Err(io::Error::new(io::ErrorKind::Other, "No books found."));
         } else if hits.len() > 1 {
@@ -80,15 +75,18 @@ impl Library {
     }
 
     /// Searches library for books.
-    pub fn search(
-        &self,
-        title: Option<&str>,
-        author: Option<&str>,
-        isbn: Option<&str>,
-    ) -> Vec<&Book> {
-        match (title, author, isbn) {
-            (None, None, None) => Vec::new(),
-            (_, _, _) => self
+    pub fn search(&self, search: LibrarySearch) -> Vec<&Book> {
+        match search {
+            LibrarySearch {
+                author: None,
+                title: None,
+                isbn: None,
+            } => Vec::new(),
+            LibrarySearch {
+                author,
+                title,
+                isbn,
+            } => self
                 .books
                 .iter()
                 .filter(|&b| {
@@ -127,6 +125,13 @@ impl Library {
 
         Ok(deserialized)
     }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct LibrarySearch<'a> {
+    pub title: Option<&'a str>,
+    pub author: Option<&'a str>,
+    pub isbn: Option<&'a str>,
 }
 
 #[cfg(test)]
@@ -171,8 +176,12 @@ mod tests {
     #[test]
     fn remove_removes_book_from_library() {
         let mut my_lib = library_with_two_books();
+        let my_search = LibrarySearch {
+            title: Some("burmese"),
+            ..Default::default()
+        };
 
-        my_lib.remove(Some("burmese"), None, None).unwrap();
+        my_lib.remove(my_search).unwrap();
 
         assert_ne!(my_lib.all().next().unwrap(), &*BURMESE_DAYS);
     }
@@ -181,8 +190,12 @@ mod tests {
     fn remove_throws_error_if_multiple_hits() {
         let mut my_lib = library_with_two_books();
         my_lib.add(EIGHTY_DAYS.clone());
+        let my_search = LibrarySearch {
+            title: Some("days"),
+            ..Default::default()
+        };
 
-        let err = my_lib.remove(Some("days"), None, None).unwrap_err();
+        let err = my_lib.remove(my_search).unwrap_err();
 
         assert!(err.to_string().contains("Found multiple books."));
     }
@@ -190,8 +203,12 @@ mod tests {
     #[test]
     fn remove_throws_error_if_no_hits() {
         let mut my_lib = library_with_two_books();
+        let my_search = LibrarySearch {
+            title: Some("1984"),
+            ..Default::default()
+        };
 
-        let err = my_lib.remove(Some("1984"), None, None).unwrap_err();
+        let err = my_lib.remove(my_search).unwrap_err();
 
         assert!(err.to_string().contains("No books found."));
     }
@@ -203,8 +220,12 @@ mod tests {
             status: Status::Reading,
             ..BURMESE_DAYS.clone()
         };
+        let my_search = LibrarySearch {
+            title: Some("burmese"),
+            ..Default::default()
+        };
 
-        my_lib.update_status((Some("burmese"), None, None), Status::Reading).unwrap();
+        my_lib.update_status(my_search, Status::Reading).unwrap();
 
         assert_eq!(my_lib.all().next().unwrap(), &expected);
     }
@@ -212,8 +233,14 @@ mod tests {
     #[test]
     fn update_status_throw_error_if_no_hit() {
         let mut my_lib = library_with_two_books();
+        let my_search = LibrarySearch {
+            title: Some("1984"),
+            ..Default::default()
+        };
 
-        let err = my_lib.update_status((Some("1984"), None, None), Status::Reading).unwrap_err();
+        let err = my_lib
+            .update_status(my_search, Status::Reading)
+            .unwrap_err();
 
         assert!(err.to_string().contains("No books found."));
     }
@@ -221,8 +248,12 @@ mod tests {
     #[test]
     fn search_finds_single_hit_by_title() {
         let my_lib = library_with_two_books();
+        let my_search = LibrarySearch {
+            title: Some("burmese"),
+            ..Default::default()
+        };
 
-        let search_hits = my_lib.search(Some("burmese"), None, None);
+        let search_hits = my_lib.search(my_search);
 
         assert_eq!(search_hits, vec![&*BURMESE_DAYS]);
     }
@@ -231,8 +262,12 @@ mod tests {
     fn search_finds_multiple_hits_by_title() {
         let mut my_lib = library_with_two_books();
         my_lib.add(EIGHTY_DAYS.clone());
+        let my_search = LibrarySearch {
+            title: Some("days"),
+            ..Default::default()
+        };
 
-        let search_hits = my_lib.search(Some("days"), None, None);
+        let search_hits = my_lib.search(my_search);
 
         assert_eq!(search_hits, vec![&*BURMESE_DAYS, &*EIGHTY_DAYS]);
     }
@@ -247,8 +282,12 @@ mod tests {
             status: Status::Want,
         };
         my_lib.add(new_book.clone());
+        let my_search = LibrarySearch {
+            author: Some("george"),
+            ..Default::default()
+        };
 
-        let search_hits = my_lib.search(None, Some("george"), None);
+        let search_hits = my_lib.search(my_search);
 
         assert_eq!(search_hits, vec![&*BURMESE_DAYS, &new_book]);
     }
@@ -256,8 +295,13 @@ mod tests {
     #[test]
     fn search_finds_single_hit_by_title_and_isbn() {
         let my_lib = library_with_two_books();
+        let my_search = LibrarySearch {
+            title: Some("kim"),
+            isbn: Some("9780199536467"),
+            ..Default::default()
+        };
 
-        let search_hits = my_lib.search(Some("kim"), None, Some("9780199536467"));
+        let search_hits = my_lib.search(my_search);
 
         assert_eq!(search_hits, vec![&*KIM]);
     }
@@ -265,8 +309,13 @@ mod tests {
     #[test]
     fn search_finds_nothing_by_title() {
         let my_lib = library_with_two_books();
+        let my_search = LibrarySearch {
+            title: Some("1984"),
+            ..Default::default()
+        };
+        
 
-        let search_hits = my_lib.search(Some("1984"), None, None);
+        let search_hits = my_lib.search(my_search);
 
         assert_eq!(search_hits, Vec::<&Book>::new());
     }
@@ -275,7 +324,7 @@ mod tests {
     fn search_finds_nothing_by_nothing() {
         let my_lib = library_with_two_books();
 
-        let search_hits = my_lib.search(None, None, None);
+        let search_hits = my_lib.search(LibrarySearch {..Default::default()});
 
         assert_eq!(search_hits, Vec::<&Book>::new());
     }
