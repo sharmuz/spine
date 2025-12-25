@@ -54,6 +54,31 @@ impl Library {
         Ok(())
     }
 
+    /// Updates status of a book in the library.
+    pub fn update_status(
+        &mut self,
+        search: (Option<&str>, Option<&str>, Option<&str>),
+        new_status: Status,
+    ) -> Result<(), io::Error> {
+        let hits = self.search(search.0, search.1, search.2);
+        if hits.is_empty() {
+            return Err(io::Error::new(io::ErrorKind::Other, "No books found."));
+        } else if hits.len() > 1 {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "Found multiple books. Please be more specific.",
+            ));
+        }
+        let update_idx = self
+            .books
+            .iter()
+            .position(|b| b == hits[0])
+            .ok_or(io::Error::new(io::ErrorKind::Other, "No books found."))?;
+
+        self.books[update_idx].status = new_status;
+        Ok(())
+    }
+
     /// Searches library for books.
     pub fn search(
         &self,
@@ -153,7 +178,7 @@ mod tests {
     }
 
     #[test]
-    fn remove_throws_error_if_multiple_matches() {
+    fn remove_throws_error_if_multiple_hits() {
         let mut my_lib = library_with_two_books();
         my_lib.add(EIGHTY_DAYS.clone());
 
@@ -163,10 +188,32 @@ mod tests {
     }
 
     #[test]
-    fn remove_throws_error_if_no_matches() {
+    fn remove_throws_error_if_no_hits() {
         let mut my_lib = library_with_two_books();
 
         let err = my_lib.remove(Some("1984"), None, None).unwrap_err();
+
+        assert!(err.to_string().contains("No books found."));
+    }
+
+    #[test]
+    fn update_status_changes_book_status() {
+        let mut my_lib = library_with_two_books();
+        let expected = Book {
+            status: Status::Reading,
+            ..BURMESE_DAYS.clone()
+        };
+
+        my_lib.update_status((Some("burmese"), None, None), Status::Reading).unwrap();
+
+        assert_eq!(my_lib.all().next().unwrap(), &expected);
+    }
+
+    #[test]
+    fn update_status_throw_error_if_no_hit() {
+        let mut my_lib = library_with_two_books();
+
+        let err = my_lib.update_status((Some("1984"), None, None), Status::Reading).unwrap_err();
 
         assert!(err.to_string().contains("No books found."));
     }
