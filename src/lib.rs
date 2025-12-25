@@ -29,23 +29,9 @@ impl Library {
 
     /// Removes a book from the library
     pub fn remove(&mut self, search: LibrarySearch) -> Result<(), io::Error> {
-        let hits = self.search(search);
-        if hits.is_empty() {
-            return Err(io::Error::new(io::ErrorKind::Other, "No books found."));
-        } else if hits.len() > 1 {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "Found multiple books. Please be more specific.",
-            ));
-        }
-
-        let rm_idx = self
-            .books
-            .iter()
-            .position(|b| b == hits[0])
-            .ok_or(io::Error::new(io::ErrorKind::Other, "No books found."))?;
-
+        let rm_idx = self.get_index(search)?;
         self.books.remove(rm_idx);
+
         Ok(())
     }
 
@@ -55,6 +41,13 @@ impl Library {
         search: LibrarySearch,
         new_status: Status,
     ) -> Result<(), io::Error> {
+        let update_idx = self.get_index(search)?;
+        self.books[update_idx].status = new_status;
+
+        Ok(())
+    }
+
+    fn get_index(&self, search: LibrarySearch) -> Result<usize, io::Error> {
         let hits = self.search(search);
         if hits.is_empty() {
             return Err(io::Error::new(io::ErrorKind::Other, "No books found."));
@@ -64,14 +57,12 @@ impl Library {
                 "Found multiple books. Please be more specific.",
             ));
         }
-        let update_idx = self
-            .books
+        let index = self.books
             .iter()
             .position(|b| b == hits[0])
-            .ok_or(io::Error::new(io::ErrorKind::Other, "No books found."))?;
+            .expect("Book found by search should be in Library.");
 
-        self.books[update_idx].status = new_status;
-        Ok(())
+        Ok(index)
     }
 
     /// Searches library for books.
@@ -246,6 +237,21 @@ mod tests {
     }
 
     #[test]
+    fn get_index_returns_correct_index() {
+        let mut my_lib = library_with_two_books();
+        my_lib.add(EIGHTY_DAYS.clone());
+        my_lib.add(Book{title: "1984".to_owned(), ..BURMESE_DAYS.clone()});
+        let my_search = LibrarySearch {
+            title: Some("eighty"),
+            ..Default::default()
+        };
+
+        let index = my_lib.get_index(my_search).unwrap();
+
+        assert_eq!(index, 2);
+    }
+
+    #[test]
     fn search_finds_single_hit_by_title() {
         let my_lib = library_with_two_books();
         let my_search = LibrarySearch {
@@ -313,7 +319,6 @@ mod tests {
             title: Some("1984"),
             ..Default::default()
         };
-        
 
         let search_hits = my_lib.search(my_search);
 
@@ -324,7 +329,9 @@ mod tests {
     fn search_finds_nothing_by_nothing() {
         let my_lib = library_with_two_books();
 
-        let search_hits = my_lib.search(LibrarySearch {..Default::default()});
+        let search_hits = my_lib.search(LibrarySearch {
+            ..Default::default()
+        });
 
         assert_eq!(search_hits, Vec::<&Book>::new());
     }
