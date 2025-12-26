@@ -57,7 +57,8 @@ impl Library {
                 "Found multiple books. Please be more specific.",
             ));
         }
-        let index = self.books
+        let index = self
+            .books
             .iter()
             .position(|b| b == hits[0])
             .expect("Book found by search should be in Library.");
@@ -82,8 +83,8 @@ impl Library {
                 .iter()
                 .filter(|&b| {
                     title.is_none_or(|t| b.title.contains(t))
-                        & author.is_none_or(|a| b.author.contains(a))
-                        & isbn.is_none_or(|c| b.isbn.as_ref().is_some_and(|i| i.contains(c)))
+                        && author.is_none_or(|a| b.author.contains(a))
+                        && isbn.is_none_or(|c| b.isbn.as_ref().is_some_and(|i| i.contains(c)))
                 })
                 .collect(),
         }
@@ -240,7 +241,10 @@ mod tests {
     fn get_index_returns_correct_index() {
         let mut my_lib = library_with_two_books();
         my_lib.add(EIGHTY_DAYS.clone());
-        my_lib.add(Book{title: "1984".to_owned(), ..BURMESE_DAYS.clone()});
+        my_lib.add(Book {
+            title: "1984".to_owned(),
+            ..BURMESE_DAYS.clone()
+        });
         let my_search = LibrarySearch {
             title: Some("eighty"),
             ..Default::default()
