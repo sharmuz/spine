@@ -5,8 +5,7 @@ use clap::{Args, CommandFactory, Parser, Subcommand, error::ErrorKind};
 use spine::{Book, Library, LibrarySearch, Status};
 
 #[derive(Parser)]
-#[command(name = "spine")]
-#[command(about = "spine is your personal command-line librarian!", long_about = None)]
+#[command(version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -26,18 +25,12 @@ enum Commands {
         #[arg(short, long)]
         isbn: Option<String>,
 
-        #[arg(long, group = "status")]
-        want: bool,
-
-        #[arg(long, group = "status")]
-        reading: bool,
-
-        #[arg(long, group = "status")]
-        read: bool,
+        #[command(flatten)]
+        status: StatusFlag,
     },
 
-    // Remove an existing book
-    Remove(RemoveArgs),
+    /// Remove an existing book
+    Remove(SearchArgs),
 
     /// Update an existing book
     #[command(subcommand)]
@@ -52,7 +45,7 @@ enum UpdateType {
         status: StatusFlag,
 
         #[command(flatten)]
-        search: RemoveArgs,
+        search: SearchArgs,
     },
 }
 
@@ -85,7 +78,7 @@ impl StatusFlag {
 
 #[derive(Args)]
 #[group(required = true, multiple = true)]
-struct RemoveArgs {
+struct SearchArgs {
     #[arg(short, long)]
     title: Option<String>,
 
@@ -97,7 +90,7 @@ struct RemoveArgs {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let args = Cli::parse();
+    let cli = Cli::parse();
 
     let path = Path::new("spine.json");
     let mut my_lib = if path.exists() {
@@ -106,7 +99,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Library::new()
     };
 
-    match args.command {
+    match cli.command {
         Commands::Show => {
             println!("Books in your library:\n");
             my_lib.all().for_each(|b| println!("{b}"));
@@ -115,32 +108,23 @@ fn main() -> Result<(), Box<dyn Error>> {
             title,
             author,
             isbn,
-            reading,
-            read,
-            ..
+            status,
         } => {
-            let status = if read {
-                Status::Read
-            } else if reading {
-                Status::Reading
-            } else {
-                Status::Want
-            };
             let my_book = Book {
                 title,
                 author,
                 isbn,
-                status,
+                status: status.to_status(),
             };
             my_lib.add(my_book);
             my_lib.save(path)?;
             println!("Book added!");
         }
-        Commands::Remove(rm_args) => {
+        Commands::Remove(search) => {
             my_lib.remove(LibrarySearch {
-                title: rm_args.title.as_deref(),
-                author: rm_args.author.as_deref(),
-                isbn: rm_args.isbn.as_deref(),
+                title: search.title.as_deref(),
+                author: search.author.as_deref(),
+                isbn: search.isbn.as_deref(),
             })?;
             my_lib.save(path)?;
             println!("Book removed from your library.");

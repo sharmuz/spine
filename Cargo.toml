@@ -2,6 +2,12 @@
 name = "spine"
 version = "0.1.0"
 edition = "2024"
+description = "spine is your personal command-line librarian!"
+homepage = "https://github.com/sharmuz/spine"
+repository = "https://github.com/sharmuz/spine"
+license = "MIT"
+keywords = ["books"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 anyhow = "1.0.100"
