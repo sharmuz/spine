@@ -1,4 +1,3 @@
-use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
     fs::{File, OpenOptions},
@@ -6,6 +5,8 @@ use std::{
     path::Path,
     slice,
 };
+
+use serde::{Deserialize, Serialize};
 
 pub use crate::book::{Book, Status};
 

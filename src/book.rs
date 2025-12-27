@@ -1,5 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
+
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Status {
