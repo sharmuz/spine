@@ -1,6 +1,7 @@
 use std::fmt::{self, Display};
 
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Status {
@@ -12,6 +13,7 @@ pub enum Status {
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Book {
+    pub id: Uuid,
     pub title: String,
     pub author: String,
     pub isbn: Option<String>,

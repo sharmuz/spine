@@ -7,6 +7,7 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 pub use crate::book::{Book, Status};
 
@@ -24,7 +25,10 @@ impl Library {
     }
 
     /// Adds a new book to the library.
-    pub fn add(&mut self, book: Book) {
+    pub fn add(&mut self, mut book: Book) {
+        if book.id.is_nil() {
+            book.id = Uuid::new_v4();
+        }
         self.books.push(book);
     }
 
@@ -134,17 +138,21 @@ mod tests {
     use tempfile::tempdir;
 
     static BURMESE_DAYS: LazyLock<Book> = LazyLock::new(|| Book {
+        id: uuid::uuid!("a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8"),
         title: "burmese days".to_owned(),
         author: "george orwell".to_owned(),
         ..Default::default()
     });
     static KIM: LazyLock<Book> = LazyLock::new(|| Book {
+        id: uuid::uuid!("b1b2b3b4-c1c2-d1d2-e1e2-e3e4e5e6e7e8"),
         title: "kim".to_owned(),
         author: "rudyard kipling".to_owned(),
         isbn: Some("9780199536467".to_owned()),
         status: Status::Read,
+        ..Default::default()
     });
     static EIGHTY_DAYS: LazyLock<Book> = LazyLock::new(|| Book {
+        id: uuid::uuid!("c1c2c3c4-d1d2-e1e2-f1f2-f3f4f5f6f7f8"),
         title: "around the world in eighty days".to_owned(),
         author: "jules verne".to_owned(),
         ..Default::default()
@@ -287,6 +295,7 @@ mod tests {
     fn search_finds_multiple_hits_by_author() {
         let mut my_lib = library_with_two_books();
         let new_book = Book {
+            id: uuid::uuid!("d1d2d3d4-e1e2-f1f2-a1a2-a3a4a5a6a7a8"),
             title: "felix holt, the radical".to_owned(),
             author: "george eliot".to_owned(),
             isbn: None,

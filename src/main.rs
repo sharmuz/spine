@@ -115,6 +115,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 author,
                 isbn,
                 status: status.to_status(),
+                ..Default::default()
             };
             my_lib.add(my_book);
             my_lib.save(path)?;
