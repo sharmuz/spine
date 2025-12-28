@@ -33,42 +33,26 @@ impl Library {
     }
 
     /// Removes a book from the library
-    pub fn remove(&mut self, search: LibrarySearch) -> Result<(), io::Error> {
-        let rm_idx = self.get_index(search)?;
+    pub fn remove(&mut self, id: Uuid) -> Result<(), io::Error> {
+        let rm_idx = self.get_index(id)?;
         self.books.remove(rm_idx);
 
         Ok(())
     }
 
     /// Updates status of a book in the library.
-    pub fn update_status(
-        &mut self,
-        search: LibrarySearch,
-        new_status: Status,
-    ) -> Result<(), io::Error> {
-        let update_idx = self.get_index(search)?;
+    pub fn update_status(&mut self, id: Uuid, new_status: Status) -> Result<(), io::Error> {
+        let update_idx = self.get_index(id)?;
         self.books[update_idx].status = new_status;
 
         Ok(())
     }
 
-    fn get_index(&self, search: LibrarySearch) -> Result<usize, io::Error> {
-        let hits = self.search(search);
-        if hits.is_empty() {
-            return Err(io::Error::new(io::ErrorKind::Other, "No books found."));
-        } else if hits.len() > 1 {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "Found multiple books. Please be more specific.",
-            ));
-        }
-        let index = self
-            .books
+    fn get_index(&self, id: Uuid) -> Result<usize, io::Error> {
+        self.books
             .iter()
-            .position(|b| b == hits[0])
-            .expect("Book found by search should be in Library.");
-
-        Ok(index)
+            .position(|b| b.id == id)
+            .ok_or(io::Error::new(io::ErrorKind::Other, "No books found."))
     }
 
     /// Searches library for books.
@@ -136,15 +120,16 @@ mod tests {
     use super::*;
     use std::sync::LazyLock;
     use tempfile::tempdir;
+    use uuid::uuid;
 
     static BURMESE_DAYS: LazyLock<Book> = LazyLock::new(|| Book {
-        id: uuid::uuid!("a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8"),
+        id: uuid!("a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8"),
         title: "burmese days".to_owned(),
         author: "george orwell".to_owned(),
         ..Default::default()
     });
     static KIM: LazyLock<Book> = LazyLock::new(|| Book {
-        id: uuid::uuid!("b1b2b3b4-c1c2-d1d2-e1e2-e3e4e5e6e7e8"),
+        id: uuid!("b1b2b3b4-c1c2-d1d2-e1e2-e3e4e5e6e7e8"),
         title: "kim".to_owned(),
         author: "rudyard kipling".to_owned(),
         isbn: Some("9780199536467".to_owned()),
@@ -152,7 +137,7 @@ mod tests {
         ..Default::default()
     });
     static EIGHTY_DAYS: LazyLock<Book> = LazyLock::new(|| Book {
-        id: uuid::uuid!("c1c2c3c4-d1d2-e1e2-f1f2-f3f4f5f6f7f8"),
+        id: uuid!("c1c2c3c4-d1d2-e1e2-f1f2-f3f4f5f6f7f8"),
         title: "around the world in eighty days".to_owned(),
         author: "jules verne".to_owned(),
         ..Default::default()
@@ -177,39 +162,19 @@ mod tests {
     #[test]
     fn remove_removes_book_from_library() {
         let mut my_lib = library_with_two_books();
-        let my_search = LibrarySearch {
-            title: Some("burmese"),
-            ..Default::default()
-        };
+        let rm_id = BURMESE_DAYS.id;
 
-        my_lib.remove(my_search).unwrap();
+        my_lib.remove(rm_id).unwrap();
 
         assert_ne!(my_lib.all().next().unwrap(), &*BURMESE_DAYS);
     }
 
     #[test]
-    fn remove_throws_error_if_multiple_hits() {
+    fn remove_throws_error_if_id_not_present() {
         let mut my_lib = library_with_two_books();
-        my_lib.add(EIGHTY_DAYS.clone());
-        let my_search = LibrarySearch {
-            title: Some("days"),
-            ..Default::default()
-        };
+        let rm_id = uuid!("c1c2c3c4-d1d2-e1e2-f1f2-f3f4f5f6f7f8");
 
-        let err = my_lib.remove(my_search).unwrap_err();
-
-        assert!(err.to_string().contains("Found multiple books."));
-    }
-
-    #[test]
-    fn remove_throws_error_if_no_hits() {
-        let mut my_lib = library_with_two_books();
-        let my_search = LibrarySearch {
-            title: Some("1984"),
-            ..Default::default()
-        };
-
-        let err = my_lib.remove(my_search).unwrap_err();
+        let err = my_lib.remove(rm_id).unwrap_err();
 
         assert!(err.to_string().contains("No books found."));
     }
@@ -221,26 +186,20 @@ mod tests {
             status: Status::Reading,
             ..BURMESE_DAYS.clone()
         };
-        let my_search = LibrarySearch {
-            title: Some("burmese"),
-            ..Default::default()
-        };
+        let update_id = BURMESE_DAYS.id;
 
-        my_lib.update_status(my_search, Status::Reading).unwrap();
+        my_lib.update_status(update_id, Status::Reading).unwrap();
 
         assert_eq!(my_lib.all().next().unwrap(), &expected);
     }
 
     #[test]
-    fn update_status_throw_error_if_no_hit() {
+    fn update_status_throws_error_if_id_not_present() {
         let mut my_lib = library_with_two_books();
-        let my_search = LibrarySearch {
-            title: Some("1984"),
-            ..Default::default()
-        };
+        let update_id = uuid!("c1c2c3c4-d1d2-e1e2-f1f2-f3f4f5f6f7f8");
 
         let err = my_lib
-            .update_status(my_search, Status::Reading)
+            .update_status(update_id, Status::Reading)
             .unwrap_err();
 
         assert!(err.to_string().contains("No books found."));
@@ -250,16 +209,9 @@ mod tests {
     fn get_index_returns_correct_index() {
         let mut my_lib = library_with_two_books();
         my_lib.add(EIGHTY_DAYS.clone());
-        my_lib.add(Book {
-            title: "1984".to_owned(),
-            ..BURMESE_DAYS.clone()
-        });
-        let my_search = LibrarySearch {
-            title: Some("eighty"),
-            ..Default::default()
-        };
+        let id = uuid!("c1c2c3c4-d1d2-e1e2-f1f2-f3f4f5f6f7f8");
 
-        let index = my_lib.get_index(my_search).unwrap();
+        let index = my_lib.get_index(id).unwrap();
 
         assert_eq!(index, 2);
     }
@@ -295,7 +247,7 @@ mod tests {
     fn search_finds_multiple_hits_by_author() {
         let mut my_lib = library_with_two_books();
         let new_book = Book {
-            id: uuid::uuid!("d1d2d3d4-e1e2-f1f2-a1a2-a3a4a5a6a7a8"),
+            id: uuid!("d1d2d3d4-e1e2-f1f2-a1a2-a3a4a5a6a7a8"),
             title: "felix holt, the radical".to_owned(),
             author: "george eliot".to_owned(),
             isbn: None,
