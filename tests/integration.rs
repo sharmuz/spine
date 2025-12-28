@@ -11,17 +11,20 @@ fn spine_add_adds_new_book_to_existing_library() {
     fs::copy("tests/data/single_book.json", out_path).unwrap();
     let mut expected = Library::new();
     expected.add(Book {
+        id: uuid::uuid!("a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8"),
         title: "hadji murat".to_owned(),
         author: "leo tolstoy".to_owned(),
         isbn: Some("9781847494818".to_owned()),
         status: Status::Read,
+        ..Default::default()
     });
-    expected.add(Book {
+    let mut book2 = Book {
+        id: uuid::uuid!("b1b2b3b4-c1c2-d1d2-e1e2-e3e4e5e6e7e8"),
         title: "norwegian wood".to_owned(),
         author: "haruki murakami".to_owned(),
         status: Status::Reading,
         ..Default::default()
-    });
+    };
 
     let mut cmd = cargo_bin_cmd!("spine");
 
@@ -37,6 +40,8 @@ fn spine_add_adds_new_book_to_existing_library() {
         .append_context("main", "wrong output");
 
     let actual = Library::open(out_path).unwrap();
+    book2.id = actual.all().last().expect("book in library").id.clone();
+    expected.add(book2);
     assert_eq!(actual, expected);
 
     fs::remove_file(out_path).unwrap();
