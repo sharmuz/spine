@@ -1,5 +1,4 @@
 use std::{
-    error::Error,
     fs::{File, OpenOptions},
     io::{self, BufReader, BufWriter},
     path::Path,
@@ -86,7 +85,7 @@ impl Library {
     }
 
     /// Saves the library to a file.
-    pub fn save(&self, path: impl AsRef<Path>) -> Result<(), Box<dyn Error>> {
+    pub fn save(&self, path: impl AsRef<Path>) -> anyhow::Result<()> {
         let file = OpenOptions::new()
             .create(true)
             .write(true)
@@ -99,7 +98,7 @@ impl Library {
     }
 
     /// Opens the library from a file.
-    pub fn open(path: impl AsRef<Path>) -> Result<Self, Box<dyn Error>> {
+    pub fn open(path: impl AsRef<Path>) -> anyhow::Result<Self> {
         let file = File::open(path)?;
         let buf = BufReader::new(file);
         let deserialized: Self = serde_json::from_reader(buf)?;

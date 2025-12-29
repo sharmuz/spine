@@ -1,6 +1,7 @@
-use std::{error::Error, path::Path};
+use std::{io, path::Path};
 
-use clap::{Args, CommandFactory, Parser, Subcommand, error::ErrorKind};
+use clap::{Args, CommandFactory, Parser, Subcommand};
+use uuid::Uuid;
 
 use spine::{Book, Library, LibrarySearch, Status};
 
@@ -89,7 +90,7 @@ struct SearchArgs {
     isbn: Option<String>,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     let path = Path::new("spine.json");
@@ -122,11 +123,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             println!("Book added!");
         }
         Commands::Remove(search) => {
-            my_lib.remove(LibrarySearch {
-                title: search.title.as_deref(),
-                author: search.author.as_deref(),
-                isbn: search.isbn.as_deref(),
-            })?;
+            let rm_id = get_search_hit(&my_lib, search)?;
+            my_lib.remove(rm_id)?;
             my_lib.save(path)?;
             println!("Book removed from your library.");
         }
@@ -138,17 +136,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                         "the following required arguments were not provided:\n",
                         "  <--want|--reading|--read>."
                     );
-                    cmd.error(ErrorKind::MissingRequiredArgument, msg).exit();
+                    cmd.error(clap::error::ErrorKind::MissingRequiredArgument, msg)
+                        .exit();
                 }
+
+                let update_id = get_search_hit(&my_lib, search)?;
                 let new_status = status.to_status();
-                my_lib.update_status(
-                    LibrarySearch {
-                        title: search.title.as_deref(),
-                        author: search.author.as_deref(),
-                        isbn: search.isbn.as_deref(),
-                    },
-                    new_status,
-                )?;
+                my_lib.update_status(update_id, new_status)?;
                 my_lib.save(path)?;
                 println!("Book status updated to {:?}.", new_status);
             }
@@ -156,4 +150,26 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
+}
+
+fn get_search_hit(lib: &Library, search: SearchArgs) -> Result<Uuid, io::Error> {
+    let hits = lib.search(LibrarySearch {
+        title: search.title.as_deref(),
+        author: search.author.as_deref(),
+        isbn: search.isbn.as_deref(),
+    });
+
+    if hits.is_empty() {
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            "No books found matching given criteria.",
+        ));
+    } else if hits.len() > 1 {
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            "Please be more specific, found multiple books.",
+        ));
+    }
+
+    Ok(hits[0].id)
 }
