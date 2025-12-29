@@ -123,7 +123,7 @@ fn main() -> anyhow::Result<()> {
             println!("Book added!");
         }
         Commands::Remove(search) => {
-            let rm_id = get_search_hit(&my_lib, search)?;
+            let rm_id = get_search_hit(&my_lib, &search)?;
             my_lib.remove(rm_id)?;
             my_lib.save(path)?;
             println!("Book removed from your library.");
@@ -140,11 +140,11 @@ fn main() -> anyhow::Result<()> {
                         .exit();
                 }
 
-                let update_id = get_search_hit(&my_lib, search)?;
+                let update_id = get_search_hit(&my_lib, &search)?;
                 let new_status = status.to_status();
                 my_lib.update_status(update_id, new_status)?;
                 my_lib.save(path)?;
-                println!("Book status updated to {:?}.", new_status);
+                println!("Book status updated to {new_status:?}.");
             }
         },
     }
@@ -152,21 +152,17 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn get_search_hit(lib: &Library, search: SearchArgs) -> Result<Uuid, io::Error> {
-    let hits = lib.search(LibrarySearch {
+fn get_search_hit(lib: &Library, search: &SearchArgs) -> Result<Uuid, io::Error> {
+    let hits = lib.search(&LibrarySearch {
         title: search.title.as_deref(),
         author: search.author.as_deref(),
         isbn: search.isbn.as_deref(),
     });
 
     if hits.is_empty() {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            "No books found matching given criteria.",
-        ));
+        return Err(io::Error::other("No books found matching given criteria."));
     } else if hits.len() > 1 {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
+        return Err(io::Error::other(
             "Please be more specific, found multiple books.",
         ));
     }

@@ -51,11 +51,12 @@ impl Library {
         self.books
             .iter()
             .position(|b| b.id == id)
-            .ok_or(io::Error::new(io::ErrorKind::Other, "No books found."))
+            .ok_or_else(|| io::Error::other("No books found."))
     }
 
     /// Searches library for books.
-    pub fn search(&self, search: LibrarySearch) -> Vec<&Book> {
+    #[must_use]
+    pub fn search(&self, search: &LibrarySearch) -> Vec<&Book> {
         match search {
             LibrarySearch {
                 author: None,
@@ -79,7 +80,6 @@ impl Library {
     }
 
     /// Returns an iterator over all books in the library.
-    #[must_use]
     pub fn all(&self) -> slice::Iter<'_, Book> {
         self.books.iter()
     }
@@ -223,7 +223,7 @@ mod tests {
             ..Default::default()
         };
 
-        let search_hits = my_lib.search(my_search);
+        let search_hits = my_lib.search(&my_search);
 
         assert_eq!(search_hits, vec![&*BURMESE_DAYS]);
     }
@@ -237,7 +237,7 @@ mod tests {
             ..Default::default()
         };
 
-        let search_hits = my_lib.search(my_search);
+        let search_hits = my_lib.search(&my_search);
 
         assert_eq!(search_hits, vec![&*BURMESE_DAYS, &*EIGHTY_DAYS]);
     }
@@ -258,7 +258,7 @@ mod tests {
             ..Default::default()
         };
 
-        let search_hits = my_lib.search(my_search);
+        let search_hits = my_lib.search(&my_search);
 
         assert_eq!(search_hits, vec![&*BURMESE_DAYS, &new_book]);
     }
@@ -272,7 +272,7 @@ mod tests {
             ..Default::default()
         };
 
-        let search_hits = my_lib.search(my_search);
+        let search_hits = my_lib.search(&my_search);
 
         assert_eq!(search_hits, vec![&*KIM]);
     }
@@ -285,7 +285,7 @@ mod tests {
             ..Default::default()
         };
 
-        let search_hits = my_lib.search(my_search);
+        let search_hits = my_lib.search(&my_search);
 
         assert_eq!(search_hits, Vec::<&Book>::new());
     }
@@ -294,7 +294,7 @@ mod tests {
     fn search_finds_nothing_by_nothing() {
         let my_lib = library_with_two_books();
 
-        let search_hits = my_lib.search(LibrarySearch {
+        let search_hits = my_lib.search(&LibrarySearch {
             ..Default::default()
         });
 
