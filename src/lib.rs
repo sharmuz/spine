@@ -78,11 +78,13 @@ impl Library {
                 author: None,
                 title: None,
                 isbn: None,
+                tags: None,
             } => Vec::new(),
             LibrarySearch {
                 author,
                 title,
                 isbn,
+                tags,
             } => self
                 .books
                 .iter()
@@ -90,6 +92,7 @@ impl Library {
                     title.is_none_or(|t| b.title.contains(t))
                         && author.is_none_or(|a| b.author.contains(a))
                         && isbn.is_none_or(|c| b.isbn.as_ref().is_some_and(|i| i.contains(c)))
+                        && tags.is_none_or(|ts| ts.iter().all(|t| b.tags.contains(t)))
                 })
                 .collect(),
         }
@@ -128,6 +131,7 @@ pub struct LibrarySearch<'a> {
     pub title: Option<&'a str>,
     pub author: Option<&'a str>,
     pub isbn: Option<&'a str>,
+    pub tags: Option<&'a Vec<String>>,
 }
 
 #[cfg(test)]
@@ -347,6 +351,19 @@ mod tests {
     }
 
     #[test]
+    fn search_finds_single_hit_by_tags() {
+        let my_lib = library_with_two_books();
+        let my_search = LibrarySearch {
+            tags: Some(&vec!["1800s".into(), "classic".into()]),
+            ..Default::default()
+        };
+
+        let search_hits = my_lib.search(&my_search);
+
+        assert_eq!(search_hits, vec![&*KIM]);
+    }
+
+    #[test]
     fn search_finds_nothing_by_title() {
         let my_lib = library_with_two_books();
         let my_search = LibrarySearch {
@@ -356,7 +373,20 @@ mod tests {
 
         let search_hits = my_lib.search(&my_search);
 
-        assert_eq!(search_hits, Vec::<&Book>::new());
+        assert!(search_hits.is_empty());
+    }
+
+    #[test]
+    fn search_finds_nothing_by_tags() {
+        let my_lib = library_with_two_books();
+        let my_search = LibrarySearch {
+            tags: Some(&vec!["1800s".into(), "japanese".into()]),
+            ..Default::default()
+        };
+
+        let search_hits = my_lib.search(&my_search);
+
+        assert!(search_hits.is_empty());
     }
 
     #[test]
@@ -367,7 +397,7 @@ mod tests {
             ..Default::default()
         });
 
-        assert_eq!(search_hits, Vec::<&Book>::new());
+        assert!(search_hits.is_empty());
     }
 
     #[test]

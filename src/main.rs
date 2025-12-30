@@ -157,6 +157,7 @@ fn get_search_hit(lib: &Library, search: &SearchArgs) -> Result<Uuid, io::Error>
         title: search.title.as_deref(),
         author: search.author.as_deref(),
         isbn: search.isbn.as_deref(),
+        ..Default::default()
     });
 
     if hits.is_empty() {
