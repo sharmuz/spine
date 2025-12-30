@@ -17,6 +17,7 @@ fn spine_add_adds_new_book_to_existing_library() {
         author: "leo tolstoy".to_owned(),
         isbn: Some("9781847494818".to_owned()),
         status: Status::Read,
+        tags: vec!["classic".into(), "russian".into()],
         ..Default::default()
     });
     let mut book2 = Book {

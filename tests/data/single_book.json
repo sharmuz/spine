@@ -5,7 +5,8 @@
             "title": "hadji murat",
             "author": "leo tolstoy",
             "isbn": "9781847494818",
-            "status": "Read"
+            "status": "Read",
+            "tags": ["classic", "russian"]
         }
     ]
 }
