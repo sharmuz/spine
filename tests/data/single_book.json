@@ -6,7 +6,10 @@
             "author": "leo tolstoy",
             "isbn": "9781847494818",
             "status": "Read",
-            "tags": ["classic", "russian"]
+            "tags": [
+                "classic",
+                "russian"
+            ]
         }
     ]
 }

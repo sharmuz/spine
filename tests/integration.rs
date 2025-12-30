@@ -25,13 +25,21 @@ fn spine_add_adds_new_book_to_existing_library() {
         title: "norwegian wood".to_owned(),
         author: "haruki murakami".to_owned(),
         status: Status::Reading,
+        tags: vec!["japanese".into()],
         ..Default::default()
     };
 
     let mut cmd = cargo_bin_cmd!("spine");
 
+    #[rustfmt::skip]
     let assert = cmd
-        .args(["add", "--reading", "norwegian wood", "haruki murakami"])
+        .args([
+            "add",
+            "--reading",
+            "--tag", "japanese",
+            "norwegian wood",
+            "haruki murakami",
+        ])
         .current_dir("tests/data")
         .assert();
 
