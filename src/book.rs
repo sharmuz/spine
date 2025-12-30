@@ -18,6 +18,7 @@ pub struct Book {
     pub author: String,
     pub isbn: Option<String>,
     pub status: Status,
+    pub tags: Vec<String>,
 }
 
 impl Display for Book {

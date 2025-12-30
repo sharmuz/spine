@@ -47,6 +47,15 @@ impl Library {
         Ok(())
     }
 
+    pub fn tag(&mut self, id: Uuid, mut tags: Vec<String>) -> Result<(), io::Error> {
+        let tag_idx = self.get_index(id)?;
+        self.books[tag_idx].tags.append(&mut tags);
+        self.books[tag_idx].tags.sort();
+        self.books[tag_idx].tags.dedup();
+
+        Ok(())
+    }
+
     fn get_index(&self, id: Uuid) -> Result<usize, io::Error> {
         self.books
             .iter()
@@ -133,6 +142,7 @@ mod tests {
         author: "rudyard kipling".to_owned(),
         isbn: Some("9780199536467".to_owned()),
         status: Status::Read,
+        tags: vec!["1800s".into(), "classic".into()],
         ..Default::default()
     });
     static EIGHTY_DAYS: LazyLock<Book> = LazyLock::new(|| Book {
@@ -205,6 +215,44 @@ mod tests {
     }
 
     #[test]
+    fn tag_adds_first_tag_to_book() {
+        let mut my_lib = library_with_two_books();
+        let expected = Book {
+            tags: vec!["british-raj".into()],
+            ..BURMESE_DAYS.clone()
+        };
+
+        my_lib
+            .tag(BURMESE_DAYS.id, vec!["british-raj".into()])
+            .unwrap();
+
+        assert_eq!(my_lib.all().next().unwrap(), &expected);
+    }
+
+    #[test]
+    fn tag_adds_additional_tags_to_book() {
+        let mut my_lib = library_with_two_books();
+        let expected = Book {
+            tags: vec![
+                "1800s".into(),
+                "british-raj".into(),
+                "classic".into(),
+                "spy".into(),
+            ],
+            ..KIM.clone()
+        };
+
+        my_lib
+            .tag(
+                KIM.id,
+                vec!["spy".into(), "british-raj".into(), "1800s".into()],
+            )
+            .unwrap();
+
+        assert_eq!(my_lib.all().last().unwrap(), &expected);
+    }
+
+    #[test]
     fn get_index_returns_correct_index() {
         let mut my_lib = library_with_two_books();
         my_lib.add(EIGHTY_DAYS.clone());
@@ -251,6 +299,7 @@ mod tests {
             author: "george eliot".to_owned(),
             isbn: None,
             status: Status::Want,
+            ..Default::default()
         };
         my_lib.add(new_book.clone());
         let my_search = LibrarySearch {
