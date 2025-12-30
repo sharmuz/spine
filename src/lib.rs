@@ -56,6 +56,13 @@ impl Library {
         Ok(())
     }
 
+    pub fn untag(&mut self, id: Uuid, tags: &Vec<String>) -> Result<(), io::Error> {
+        let tag_idx = self.get_index(id)?;
+        self.books[tag_idx].tags.retain(|t| !tags.contains(t));
+
+        Ok(())
+    }
+
     fn get_index(&self, id: Uuid) -> Result<usize, io::Error> {
         self.books
             .iter()
@@ -248,6 +255,19 @@ mod tests {
                 vec!["spy".into(), "british-raj".into(), "1800s".into()],
             )
             .unwrap();
+
+        assert_eq!(my_lib.all().last().unwrap(), &expected);
+    }
+
+    #[test]
+    fn untag_removes_existing_tags() {
+        let mut my_lib = library_with_two_books();
+        let expected = Book {
+            tags: vec!["classic".into()],
+            ..KIM.clone()
+        };
+
+        my_lib.untag(KIM.id, &vec!["1800s".into(), "illustrated".into()]).unwrap();
 
         assert_eq!(my_lib.all().last().unwrap(), &expected);
     }
