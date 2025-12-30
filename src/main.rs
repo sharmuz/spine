@@ -28,6 +28,9 @@ enum Commands {
 
         #[command(flatten)]
         status: StatusFlag,
+
+        #[arg(long, alias = "tag", value_delimiter = ',')]
+        tags: Vec<String>,
     },
 
     /// Remove an existing book
@@ -88,6 +91,9 @@ struct SearchArgs {
 
     #[arg(short, long)]
     isbn: Option<String>,
+
+    #[arg(long, alias = "tag", value_delimiter = ',')]
+    tags: Option<Vec<String>>,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -110,12 +116,14 @@ fn main() -> anyhow::Result<()> {
             author,
             isbn,
             status,
+            tags,
         } => {
             let my_book = Book {
                 title,
                 author,
                 isbn,
                 status: status.to_status(),
+                tags,
                 ..Default::default()
             };
             my_lib.add(my_book);
@@ -157,6 +165,7 @@ fn get_search_hit(lib: &Library, search: &SearchArgs) -> Result<Uuid, io::Error>
         title: search.title.as_deref(),
         author: search.author.as_deref(),
         isbn: search.isbn.as_deref(),
+        tags: search.tags.as_ref(),
         ..Default::default()
     });
 
