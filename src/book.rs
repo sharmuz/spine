@@ -1,4 +1,7 @@
-use std::fmt::{self, Display};
+use std::{
+    fmt::{self, Display},
+    str::FromStr,
+};
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -9,6 +12,18 @@ pub enum Status {
     Want,
     Reading,
     Read,
+}
+
+impl FromStr for Status {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim().to_lowercase().as_str() {
+            "want" => Ok(Status::Want),
+            "reading" => Ok(Status::Reading),
+            "read" => Ok(Status::Read),
+            _ => Err("Invalid status: expected 'want', 'reading', or 'read'"),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
