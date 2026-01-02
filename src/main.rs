@@ -1,4 +1,4 @@
-use std::{io, path::Path};
+use std::{io, path::Path, str::FromStr};
 
 use clap::{Args, CommandFactory, Parser, Subcommand};
 use uuid::Uuid;
@@ -92,6 +92,9 @@ struct SearchArgs {
     #[arg(short, long)]
     isbn: Option<String>,
 
+    #[arg(short, long)]
+    status: Option<String>,
+
     #[arg(long, alias = "tag", value_delimiter = ',')]
     tags: Option<Vec<String>>,
 }
@@ -165,6 +168,12 @@ fn get_search_hit(lib: &Library, search: &SearchArgs) -> Result<Uuid, io::Error>
         title: search.title.as_deref(),
         author: search.author.as_deref(),
         isbn: search.isbn.as_deref(),
+        status: search
+            .status
+            .as_deref()
+            .map(Status::from_str)
+            .transpose()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?,
         tags: search.tags.as_ref(),
         ..Default::default()
     });
