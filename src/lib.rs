@@ -78,12 +78,14 @@ impl Library {
                 author: None,
                 title: None,
                 isbn: None,
+                status: None,
                 tags: None,
             } => Vec::new(),
             LibrarySearch {
                 author,
                 title,
                 isbn,
+                status,
                 tags,
             } => self
                 .books
@@ -92,6 +94,7 @@ impl Library {
                     title.is_none_or(|t| b.title.contains(t))
                         && author.is_none_or(|a| b.author.contains(a))
                         && isbn.is_none_or(|c| b.isbn.as_ref().is_some_and(|i| i.contains(c)))
+                        && status.is_none_or(|s| b.status == s)
                         && tags.is_none_or(|ts| ts.iter().all(|t| b.tags.contains(t)))
                 })
                 .collect(),
@@ -131,6 +134,7 @@ pub struct LibrarySearch<'a> {
     pub title: Option<&'a str>,
     pub author: Option<&'a str>,
     pub isbn: Option<&'a str>,
+    pub status: Option<Status>,
     pub tags: Option<&'a Vec<String>>,
 }
 
@@ -271,7 +275,9 @@ mod tests {
             ..KIM.clone()
         };
 
-        my_lib.untag(KIM.id, &vec!["1800s".into(), "illustrated".into()]).unwrap();
+        my_lib
+            .untag(KIM.id, &vec!["1800s".into(), "illustrated".into()])
+            .unwrap();
 
         assert_eq!(my_lib.all().last().unwrap(), &expected);
     }
@@ -342,6 +348,19 @@ mod tests {
         let my_search = LibrarySearch {
             title: Some("kim"),
             isbn: Some("9780199536467"),
+            ..Default::default()
+        };
+
+        let search_hits = my_lib.search(&my_search);
+
+        assert_eq!(search_hits, vec![&*KIM]);
+    }
+
+    #[test]
+    fn search_finds_single_hit_by_status() {
+        let my_lib = library_with_two_books();
+        let my_search = LibrarySearch {
+            status: Some(Status::Read),
             ..Default::default()
         };
 
