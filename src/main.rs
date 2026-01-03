@@ -131,7 +131,8 @@ fn main() -> anyhow::Result<()> {
             println!("Book added!");
         }
         Commands::Remove(search_args) => {
-            let rm_id = get_search_hit(&my_lib, &search_args)?;
+            let hits = get_search_hits(&my_lib, &search_args)?;
+            let rm_id = select_books(hits)?;
             my_lib.remove(rm_id)?;
             my_lib.save(path)?;
             println!("Book removed from your library.");
@@ -148,7 +149,8 @@ fn main() -> anyhow::Result<()> {
                         .exit();
                 }
 
-                let update_id = get_search_hit(&my_lib, &search)?;
+                let hits = get_search_hits(&my_lib, &search)?;
+                let update_id = select_books(hits)?;
                 let new_status = status.to_status();
                 my_lib.update_status(update_id, new_status)?;
                 my_lib.save(path)?;
@@ -160,8 +162,8 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn get_search_hit(lib: &Library, search: &SearchArgs) -> Result<Uuid, io::Error> {
-    let hits = lib.search(&LibrarySearch {
+fn get_search_hits<'a>(lib: &'a Library, search: &SearchArgs) -> Result<Vec<&'a Book>, io::Error> {
+    Ok(lib.search(&LibrarySearch {
         title: search.title.as_deref(),
         author: search.author.as_deref(),
         isbn: search.isbn.as_deref(),
@@ -173,8 +175,10 @@ fn get_search_hit(lib: &Library, search: &SearchArgs) -> Result<Uuid, io::Error>
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?,
         tags: search.tags.as_ref(),
         ..Default::default()
-    });
+    }))
+}
 
+fn select_books(hits: Vec<&Book>) -> Result<Uuid, io::Error> {
     if hits.is_empty() {
         return Err(io::Error::other("No books found matching given criteria."));
     } else if hits.len() > 1 {
