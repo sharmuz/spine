@@ -18,20 +18,7 @@ enum Commands {
     Show,
 
     /// Add a new book
-    Add {
-        title: String,
-
-        author: String,
-
-        #[arg(short, long)]
-        isbn: Option<String>,
-
-        #[command(flatten)]
-        status: StatusFlag,
-
-        #[arg(long, alias = "tag", value_delimiter = ',')]
-        tags: Vec<String>,
-    },
+    Add(AddArgs),
 
     /// Remove an existing book
     Remove(SearchArgs),
@@ -39,6 +26,41 @@ enum Commands {
     /// Update an existing book
     #[command(subcommand)]
     Update(UpdateType),
+}
+
+#[derive(Args)]
+struct AddArgs {
+    title: String,
+
+    author: String,
+
+    #[arg(short, long)]
+    isbn: Option<String>,
+
+    #[command(flatten)]
+    status: StatusFlag,
+
+    #[arg(long, alias = "tag", value_delimiter = ',')]
+    tags: Vec<String>,
+}
+
+#[derive(Args)]
+#[group(required = true, multiple = true)]
+struct SearchArgs {
+    #[arg(short, long)]
+    title: Option<String>,
+
+    #[arg(short, long)]
+    author: Option<String>,
+
+    #[arg(short, long)]
+    isbn: Option<String>,
+
+    #[arg(short, long)]
+    status: Option<String>,
+
+    #[arg(long, alias = "tag", value_delimiter = ',')]
+    tags: Option<Vec<String>>,
 }
 
 #[derive(Subcommand)]
@@ -54,7 +76,7 @@ enum UpdateType {
 }
 
 #[derive(Args)]
-#[group(multiple = false)]
+#[group(required = false, multiple = false)]
 struct StatusFlag {
     #[arg(long)]
     want: bool,
@@ -80,25 +102,6 @@ impl StatusFlag {
     }
 }
 
-#[derive(Args)]
-#[group(required = true, multiple = true)]
-struct SearchArgs {
-    #[arg(short, long)]
-    title: Option<String>,
-
-    #[arg(short, long)]
-    author: Option<String>,
-
-    #[arg(short, long)]
-    isbn: Option<String>,
-
-    #[arg(short, long)]
-    status: Option<String>,
-
-    #[arg(long, alias = "tag", value_delimiter = ',')]
-    tags: Option<Vec<String>>,
-}
-
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
@@ -114,32 +117,26 @@ fn main() -> anyhow::Result<()> {
             println!("Books in your library:\n");
             my_lib.all().for_each(|b| println!("{b}"));
         }
-        Commands::Add {
-            title,
-            author,
-            isbn,
-            status,
-            tags,
-        } => {
+        Commands::Add(add_args) => {
             let my_book = Book {
-                title,
-                author,
-                isbn,
-                status: status.to_status(),
-                tags,
+                title: add_args.title,
+                author: add_args.author,
+                isbn: add_args.isbn,
+                status: add_args.status.to_status(),
+                tags: add_args.tags,
                 ..Default::default()
             };
             my_lib.add(my_book);
             my_lib.save(path)?;
             println!("Book added!");
         }
-        Commands::Remove(search) => {
-            let rm_id = get_search_hit(&my_lib, &search)?;
+        Commands::Remove(search_args) => {
+            let rm_id = get_search_hit(&my_lib, &search_args)?;
             my_lib.remove(rm_id)?;
             my_lib.save(path)?;
             println!("Book removed from your library.");
         }
-        Commands::Update(update) => match update {
+        Commands::Update(update_type) => match update_type {
             UpdateType::Status { status, search } => {
                 if !status.is_set() {
                     let mut cmd = Cli::command();
