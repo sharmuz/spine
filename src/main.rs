@@ -134,10 +134,10 @@ fn main() -> anyhow::Result<()> {
     match cli.command {
         Commands::Show(show_args) => {
             if show_args.all && show_args.search.is_any_set() {
-                let mut cmd = Cli::command();
-                let msg = concat!("--all is mutually exclusive with search criteria.");
-                cmd.error(clap::error::ErrorKind::ArgumentConflict, msg)
-                    .exit();
+                exit_with_error(
+                    clap::error::ErrorKind::ArgumentConflict,
+                    "--all is mutually exclusive with search criteria.",
+                );
             }
 
             println!("Books in your library:\n");
@@ -163,10 +163,10 @@ fn main() -> anyhow::Result<()> {
         }
         Commands::Remove(search_args) => {
             if !search_args.is_any_set() {
-                let mut cmd = Cli::command();
-                let msg = concat!("no search criteria provided.");
-                cmd.error(clap::error::ErrorKind::MissingRequiredArgument, msg)
-                    .exit();
+                exit_with_error(
+                    clap::error::ErrorKind::MissingRequiredArgument,
+                    "no search criteria provided.",
+                );
             }
 
             let hits = get_search_hits(&my_lib, &search_args)?;
@@ -178,19 +178,19 @@ fn main() -> anyhow::Result<()> {
         Commands::Update(update_type) => match update_type {
             UpdateType::Status { status, search } => {
                 if !status.is_set() {
-                    let mut cmd = Cli::command();
-                    let msg = concat!(
-                        "the following required arguments were not provided:\n",
-                        "  <--want|--reading|--read>."
+                    exit_with_error(
+                        clap::error::ErrorKind::MissingRequiredArgument,
+                        concat!(
+                            "the following required arguments were not provided:\n",
+                            "  <--want|--reading|--read>."
+                        ),
                     );
-                    cmd.error(clap::error::ErrorKind::MissingRequiredArgument, msg)
-                        .exit();
                 }
                 if !search.is_any_set() {
-                    let mut cmd = Cli::command();
-                    let msg = concat!("no search criteria provided.");
-                    cmd.error(clap::error::ErrorKind::MissingRequiredArgument, msg)
-                        .exit();
+                    exit_with_error(
+                        clap::error::ErrorKind::MissingRequiredArgument,
+                        "no search criteria provided.",
+                    );
                 }
 
                 let hits = get_search_hits(&my_lib, &search)?;
@@ -232,4 +232,9 @@ fn select_books(hits: Vec<&Book>) -> Result<Uuid, io::Error> {
     }
 
     Ok(hits[0].id)
+}
+
+fn exit_with_error(kind: clap::error::ErrorKind, msg: &str) -> ! {
+    let mut cmd = Cli::command();
+    cmd.error(kind, msg).exit();
 }
