@@ -45,7 +45,7 @@ struct AddArgs {
 }
 
 #[derive(Args)]
-#[group(required = true, multiple = true)]
+#[group(required = false, multiple = true)]
 struct SearchArgs {
     #[arg(short, long)]
     title: Option<String>,
@@ -61,6 +61,16 @@ struct SearchArgs {
 
     #[arg(long, alias = "tag", value_delimiter = ',')]
     tags: Option<Vec<String>>,
+}
+
+impl SearchArgs {
+    fn is_any_set(&self) -> bool {
+        self.title.is_some()
+            || self.author.is_some()
+            || self.isbn.is_some()
+            || self.status.is_some()
+            || self.tags.is_some()
+    }
 }
 
 #[derive(Subcommand)]
@@ -131,6 +141,13 @@ fn main() -> anyhow::Result<()> {
             println!("Book added!");
         }
         Commands::Remove(search_args) => {
+            if !search_args.is_any_set() {
+                let mut cmd = Cli::command();
+                let msg = concat!("no search criteria provided.");
+                cmd.error(clap::error::ErrorKind::MissingRequiredArgument, msg)
+                    .exit();
+            }
+
             let hits = get_search_hits(&my_lib, &search_args)?;
             let rm_id = select_books(hits)?;
             my_lib.remove(rm_id)?;
@@ -145,6 +162,12 @@ fn main() -> anyhow::Result<()> {
                         "the following required arguments were not provided:\n",
                         "  <--want|--reading|--read>."
                     );
+                    cmd.error(clap::error::ErrorKind::MissingRequiredArgument, msg)
+                        .exit();
+                }
+                if !search.is_any_set() {
+                    let mut cmd = Cli::command();
+                    let msg = concat!("no search criteria provided.");
                     cmd.error(clap::error::ErrorKind::MissingRequiredArgument, msg)
                         .exit();
                 }
