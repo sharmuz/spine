@@ -15,7 +15,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Show your books
-    Show,
+    Show(ShowArgs),
 
     /// Add a new book
     Add(AddArgs),
@@ -42,6 +42,15 @@ struct AddArgs {
 
     #[arg(long, alias = "tag", value_delimiter = ',')]
     tags: Vec<String>,
+}
+
+#[derive(Args)]
+struct ShowArgs {
+    #[arg(long)]
+    all: bool,
+
+    #[command(flatten)]
+    search: SearchArgs,
 }
 
 #[derive(Args)]
@@ -123,9 +132,21 @@ fn main() -> anyhow::Result<()> {
     };
 
     match cli.command {
-        Commands::Show => {
+        Commands::Show(show_args) => {
+            if show_args.all && show_args.search.is_any_set() {
+                let mut cmd = Cli::command();
+                let msg = concat!("--all is mutually exclusive with search criteria.");
+                cmd.error(clap::error::ErrorKind::ArgumentConflict, msg)
+                    .exit();
+            }
+
             println!("Books in your library:\n");
-            my_lib.all().for_each(|b| println!("{b}"));
+            if show_args.search.is_any_set() {
+                let hits = get_search_hits(&my_lib, &show_args.search)?;
+                hits.iter().for_each(|b| println!("{b}"));
+            } else {
+                my_lib.all().for_each(|b| println!("{b}"));
+            }
         }
         Commands::Add(add_args) => {
             let my_book = Book {
