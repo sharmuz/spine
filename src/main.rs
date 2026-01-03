@@ -1,5 +1,6 @@
 use std::{io, path::Path, str::FromStr};
 
+use anyhow::bail;
 use clap::{Args, CommandFactory, Parser, Subcommand};
 use uuid::Uuid;
 
@@ -140,11 +141,16 @@ fn main() -> anyhow::Result<()> {
                 );
             }
 
-            println!("Books in your library:\n");
             if show_args.search.is_any_set() {
                 let hits = get_search_hits(&my_lib, &show_args.search)?;
+                if hits.is_empty() {
+                    bail!("No books found matching given criteria.");
+                }
+
+                println!("Matched {} book(s) in your library:\n", hits.len());
                 hits.iter().for_each(|b| println!("{b}"));
             } else {
+                println!("All books in your library:\n");
                 my_lib.all().for_each(|b| println!("{b}"));
             }
         }
@@ -226,9 +232,16 @@ fn select_books(hits: Vec<&Book>) -> Result<Uuid, io::Error> {
     if hits.is_empty() {
         return Err(io::Error::other("No books found matching given criteria."));
     } else if hits.len() > 1 {
-        return Err(io::Error::other(
-            "Please be more specific, found multiple books.",
-        ));
+        let books = hits
+            .iter()
+            .map(|b| b.to_string())
+            .collect::<Vec<String>>()
+            .join("\n");
+        return Err(io::Error::other(format!(
+            "Please be more specific, found {} matching books:\n\n{}",
+            hits.len(),
+            books,
+        )));
     }
 
     Ok(hits[0].id)
