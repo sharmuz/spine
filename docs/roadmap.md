@@ -2,18 +2,15 @@
 
 Or, more like a list of issues and features I may address at some point :)
 
-## v0.3
-- Books each have a uuid, auto-generated on creation
-- Remove/update/get_index/tag take a uuid
-- CLI (or calling code) handles multiple hits from search (which is unchanged)
-- User can `tag` books with custom tags, multiple per book possible
-- Searching using `show` with author, title, isbn and/or custom tags
+## v0.4
+- More robust metadata handling via custom types for title/author/isbn
+- Open handles missing fields, inserting defaults
 - Library file can be at any user-provided path, with several defaults checked
+- Get user input for selection when multiple hits
 
 ## Beyond
 - More metadata: date read, publisher, translator, edition, comment etc.
-- Book details can be added/edited (title, author, isbn)
-- More robust metadata handling via custom types for title/author/isbn
+- Metadata can be added/edited (title, author, isbn)
 - Implement custom Error(s)
 - Import/export from/to format compatible with Hardcover/Goodreads/Storygraph
 - Leverage an API service (which?) to `validate` books - adding/correcting data
