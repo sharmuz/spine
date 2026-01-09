@@ -1,4 +1,9 @@
-use std::{io, path::Path, str::FromStr};
+use std::{
+    io::{self, BufRead},
+    num::ParseIntError,
+    path::Path,
+    str::FromStr,
+};
 
 use anyhow::bail;
 use clap::{Args, CommandFactory, Parser, Subcommand};
@@ -176,10 +181,12 @@ fn main() -> anyhow::Result<()> {
             }
 
             let hits = get_search_hits(&my_lib, &search_args)?;
-            let rm_id = select_books(hits)?;
-            my_lib.remove(rm_id)?;
+            let rm_ids = select_books(hits)?;
+            for id in &rm_ids {
+                my_lib.remove(*id)?;
+            }
             my_lib.save(path)?;
-            println!("Book removed from your library.");
+            println!("{} book(s) removed from your library.", rm_ids.len());
         }
         Commands::Update(update_type) => match update_type {
             UpdateType::Status { status, search } => {
@@ -199,17 +206,27 @@ fn main() -> anyhow::Result<()> {
                     );
                 }
 
-                let hits = get_search_hits(&my_lib, &search)?;
-                let update_id = select_books(hits)?;
                 let new_status = status.to_status();
-                my_lib.update_status(update_id, new_status)?;
+                let hits = get_search_hits(&my_lib, &search)?;
+                let update_ids = select_books(hits)?;
+                for id in &update_ids {
+                    my_lib.update_status(*id, new_status)?;
+                }
                 my_lib.save(path)?;
-                println!("Book status updated to {new_status:?}.");
+                println!(
+                    "{} book(s)'s status updated to {new_status:?}.",
+                    update_ids.len()
+                );
             }
         },
     }
 
     Ok(())
+}
+
+fn exit_with_error(kind: clap::error::ErrorKind, msg: &str) -> ! {
+    let mut cmd = Cli::command();
+    cmd.error(kind, msg).exit();
 }
 
 fn get_search_hits<'a>(lib: &'a Library, search: &SearchArgs) -> Result<Vec<&'a Book>, io::Error> {
@@ -228,26 +245,63 @@ fn get_search_hits<'a>(lib: &'a Library, search: &SearchArgs) -> Result<Vec<&'a 
     }))
 }
 
-fn select_books(hits: Vec<&Book>) -> Result<Uuid, io::Error> {
+fn select_books(hits: Vec<&Book>) -> Result<Vec<Uuid>, io::Error> {
     if hits.is_empty() {
         return Err(io::Error::other("No books found matching given criteria."));
-    } else if hits.len() > 1 {
-        let books = hits
+    }
+    if hits.len() > 1 {
+        let found_msg = hits
             .iter()
-            .map(|b| b.to_string())
+            .enumerate()
+            .map(|(i, b)| format!("{}. {}", (i + 1), b.to_string()))
             .collect::<Vec<String>>()
             .join("\n");
-        return Err(io::Error::other(format!(
+        println!(
             "Please be more specific, found {} matching books:\n\n{}",
             hits.len(),
-            books,
-        )));
+            found_msg,
+        );
+        println!("\nWhich books? (if multiple, separate numbers by commas):");
+
+        loop {
+            match get_user_selections(&hits) {
+                Ok(uuids) => return Ok(uuids),
+                Err(e) => println!("{e}"),
+            }
+        }
     }
 
-    Ok(hits[0].id)
+    Ok(vec![hits[0].id])
 }
 
-fn exit_with_error(kind: clap::error::ErrorKind, msg: &str) -> ! {
-    let mut cmd = Cli::command();
-    cmd.error(kind, msg).exit();
+fn get_user_selections(hits: &[&Book]) -> Result<Vec<Uuid>, io::Error> {
+    let mut buffer = String::new();
+    let stdin = io::stdin();
+    {
+        let mut handle = stdin.lock();
+        handle.read_line(&mut buffer)?;
+    }
+    let choices = buffer
+        .split(",")
+        .map(|s| s.trim().parse::<usize>())
+        .collect::<Vec<Result<usize, ParseIntError>>>();
+    for ch in &choices {
+        if !ch.as_ref().is_ok_and(|c| *c > 0 && *c <= hits.len()) {
+            return Err(io::Error::other(
+                "Invalid selection. Please select again from the numbers displayed:",
+            ));
+        }
+    }
+    let indexes = choices
+        .iter()
+        .map(|c| c.as_ref().expect("Valid integer.") - 1)
+        .collect::<Vec<usize>>();
+    let uuids = hits
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| indexes.contains(i))
+        .map(|(_, b)| b.id)
+        .collect::<Vec<Uuid>>();
+    
+    Ok(uuids)
 }
