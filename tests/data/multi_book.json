@@ -4,7 +4,9 @@
             "id": "a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8",
             "title": "hadji murat",
             "author": "leo tolstoy",
-            "isbn": "9781847494818",
+            "isbn": {
+                "Isbn13": "9781847494818"
+            },
             "status": "Read",
             "tags": [
                 "classic",
@@ -25,7 +27,9 @@
             "id": "c1c2c3c4-d1d2-e1e2-f1f2-f3f4f5f6f7f8",
             "title": "cryptonomicon",
             "author": "neal stephenson",
-            "isbn": "9780123456788",
+            "isbn": {
+                "Isbn13": "9780123456788"
+            },
             "status": "Want",
             "tags": [
                 "sci-fi"

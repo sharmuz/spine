@@ -8,7 +8,7 @@ use std::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-pub use crate::book::{Book, Status};
+pub use crate::book::{Book, Isbn, Status};
 
 pub mod book;
 
@@ -93,7 +93,8 @@ impl Library {
                 .filter(|&b| {
                     title.is_none_or(|t| b.title.contains(t))
                         && author.is_none_or(|a| b.author.contains(a))
-                        && isbn.is_none_or(|c| b.isbn.as_ref().is_some_and(|i| i.contains(c)))
+                        && isbn
+                            .is_none_or(|c| b.isbn.as_ref().is_some_and(|i| i.as_str().contains(c)))
                         && status.is_none_or(|s| b.status == s)
                         && tags.is_none_or(|ts| ts.iter().all(|t| b.tags.contains(t)))
                 })
@@ -141,7 +142,7 @@ pub struct LibrarySearch<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::LazyLock;
+    use std::{str::FromStr, sync::LazyLock};
     use tempfile::tempdir;
     use uuid::uuid;
 
@@ -155,7 +156,7 @@ mod tests {
         id: uuid!("b1b2b3b4-c1c2-d1d2-e1e2-e3e4e5e6e7e8"),
         title: "kim".to_owned(),
         author: "rudyard kipling".to_owned(),
-        isbn: Some("9780199536467".to_owned()),
+        isbn: Some(Isbn::from_str("9780199536467").unwrap()),
         status: Status::Read,
         tags: vec!["1800s".into(), "classic".into()],
         ..Default::default()

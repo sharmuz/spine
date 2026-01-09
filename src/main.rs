@@ -9,7 +9,7 @@ use anyhow::bail;
 use clap::{Args, CommandFactory, Parser, Subcommand};
 use uuid::Uuid;
 
-use spine::{Book, Library, LibrarySearch, Status};
+use spine::{Book, Isbn, Library, LibrarySearch, Status};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -163,7 +163,7 @@ fn main() -> anyhow::Result<()> {
             let my_book = Book {
                 title: add_args.title,
                 author: add_args.author,
-                isbn: add_args.isbn,
+                isbn: add_args.isbn.map(|s| Isbn::from_str(&s)).transpose()?,
                 status: add_args.status.to_status(),
                 tags: add_args.tags,
                 ..Default::default()
@@ -234,11 +234,7 @@ fn get_search_hits<'a>(lib: &'a Library, search: &SearchArgs) -> Result<Vec<&'a 
         title: search.title.as_deref(),
         author: search.author.as_deref(),
         isbn: search.isbn.as_deref(),
-        status: search
-            .status
-            .as_deref()
-            .map(Status::from_str)
-            .transpose()?,
+        status: search.status.as_deref().map(Status::from_str).transpose()?,
         tags: search.tags.as_ref(),
         ..Default::default()
     }))
@@ -301,6 +297,6 @@ fn get_user_selections(hits: &[&Book]) -> Result<Vec<Uuid>, io::Error> {
         .filter(|(i, _)| indexes.contains(i))
         .map(|(_, b)| b.id)
         .collect::<Vec<Uuid>>();
-    
+
     Ok(uuids)
 }

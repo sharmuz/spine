@@ -1,10 +1,10 @@
-use std::{fs, path::Path};
+use std::{fs, path::Path, str::FromStr};
 
 use assert_cmd::cargo::cargo_bin_cmd;
 use predicates::prelude::*;
 use uuid::uuid;
 
-use spine::{Book, Library, Status};
+use spine::{Book, Isbn, Library, Status};
 
 #[test]
 fn spine_add_adds_new_book_to_existing_library() {
@@ -15,7 +15,7 @@ fn spine_add_adds_new_book_to_existing_library() {
         id: uuid!("a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8"),
         title: "hadji murat".to_owned(),
         author: "leo tolstoy".to_owned(),
-        isbn: Some("9781847494818".to_owned()),
+        isbn: Some(Isbn::from_str("9781847494818").unwrap()),
         status: Status::Read,
         tags: vec!["classic".into(), "russian".into()],
         ..Default::default()
