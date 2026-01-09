@@ -238,8 +238,7 @@ fn get_search_hits<'a>(lib: &'a Library, search: &SearchArgs) -> Result<Vec<&'a 
             .status
             .as_deref()
             .map(Status::from_str)
-            .transpose()
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?,
+            .transpose()?,
         tags: search.tags.as_ref(),
         ..Default::default()
     }))
