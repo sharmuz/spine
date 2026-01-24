@@ -47,11 +47,12 @@ impl Library {
         Ok(())
     }
 
-    pub fn tag(&mut self, id: Uuid, mut tags: Vec<String>) -> Result<(), io::Error> {
+    pub fn tag<I>(&mut self, id: Uuid, tags: I) -> Result<(), io::Error>
+    where
+        I: IntoIterator<Item = String>,
+    {
         let tag_idx = self.get_index(id)?;
-        self.books[tag_idx].tags.append(&mut tags);
-        self.books[tag_idx].tags.sort();
-        self.books[tag_idx].tags.dedup();
+        self.books[tag_idx].tags.extend(tags);
 
         Ok(())
     }
@@ -128,7 +129,7 @@ pub struct LibrarySearch<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{str::FromStr, sync::LazyLock};
+    use std::{collections::HashSet, str::FromStr, sync::LazyLock};
     use tempfile::tempdir;
     use uuid::uuid;
 
@@ -144,7 +145,7 @@ mod tests {
         author: Author::from_str("rudyard kipling").unwrap(),
         isbn: Some(Isbn::from_str("9780199536467").unwrap()),
         status: Status::Read,
-        tags: vec!["1800s".into(), "classic".into()],
+        tags: HashSet::from(["1800s".into(), "classic".into()]),
         ..Default::default()
     });
     static EIGHTY_DAYS: LazyLock<Book> = LazyLock::new(|| Book {
@@ -220,7 +221,7 @@ mod tests {
     fn tag_adds_first_tag_to_book() {
         let mut my_lib = library_with_two_books();
         let expected = Book {
-            tags: vec!["british-raj".into()],
+            tags: HashSet::from(["british-raj".into()]),
             ..BURMESE_DAYS.clone()
         };
 
@@ -235,12 +236,12 @@ mod tests {
     fn tag_adds_additional_tags_to_book() {
         let mut my_lib = library_with_two_books();
         let expected = Book {
-            tags: vec![
+            tags: HashSet::from([
                 "1800s".into(),
                 "british-raj".into(),
                 "classic".into(),
                 "spy".into(),
-            ],
+            ]),
             ..KIM.clone()
         };
 
@@ -258,7 +259,7 @@ mod tests {
     fn untag_removes_existing_tags() {
         let mut my_lib = library_with_two_books();
         let expected = Book {
-            tags: vec!["classic".into()],
+            tags: HashSet::from(["classic".into()]),
             ..KIM.clone()
         };
 

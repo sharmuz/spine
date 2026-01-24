@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     fmt::{self, Display},
     io,
     str::FromStr,
@@ -14,7 +15,7 @@ pub struct Book {
     pub author: Author,
     pub isbn: Option<Isbn>,
     pub status: Status,
-    pub tags: Vec<String>,
+    pub tags: HashSet<String>,
 }
 
 impl Display for Book {

@@ -1,4 +1,4 @@
-use std::{fs, path::Path, str::FromStr};
+use std::{collections::HashSet, fs, path::Path, str::FromStr};
 
 use assert_cmd::cargo::cargo_bin_cmd;
 use predicates::prelude::*;
@@ -17,7 +17,7 @@ fn spine_add_adds_new_book_to_existing_library() {
         author: Author::from_str("leo tolstoy").unwrap(),
         isbn: Some(Isbn::from_str("9781847494818").unwrap()),
         status: Status::Read,
-        tags: vec!["classic".into(), "russian".into()],
+        tags: HashSet::from(["classic".into(), "russian".into()]),
         ..Default::default()
     });
     let mut book2 = Book {
@@ -25,7 +25,7 @@ fn spine_add_adds_new_book_to_existing_library() {
         title: "norwegian wood".to_owned(),
         author: Author::from_str("haruki murakami").unwrap(),
         status: Status::Reading,
-        tags: vec!["japanese".into()],
+        tags: HashSet::from(["japanese".into()]),
         ..Default::default()
     };
 

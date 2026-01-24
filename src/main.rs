@@ -165,7 +165,7 @@ fn main() -> anyhow::Result<()> {
                 author: Author::from_str(&add_args.author)?,
                 isbn: add_args.isbn.map(|s| Isbn::from_str(&s)).transpose()?,
                 status: add_args.status.to_status(),
-                tags: add_args.tags,
+                tags: add_args.tags.into_iter().collect(),
                 ..Default::default()
             };
             my_lib.add(my_book);
