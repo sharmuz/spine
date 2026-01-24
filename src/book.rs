@@ -157,4 +157,25 @@ mod tests {
 
         assert!(err.to_string().contains("Invalid author name"));
     }
+
+    #[test]
+    fn isbn_creates_from_10_digits_ending_x() {
+        let isbn = Isbn::from_str("1-23456789-X").unwrap();
+
+        assert_eq!(isbn, Isbn::Isbn10("123456789X".to_owned()));
+    }
+
+    #[test]
+    fn isbn_throws_error_if_13_digits_with_invalid_prefix() {
+        let err = Isbn::from_str("977-1234567890").unwrap_err();
+
+        assert!(err.to_string().contains("Invalid ISBN"));
+    }
+
+    #[test]
+    fn isbn_throws_error_if_13_digits_ending_x() {
+        let err = Isbn::from_str("978-123456789X").unwrap_err();
+
+        assert!(err.to_string().contains("Invalid ISBN"));
+    }
 }
