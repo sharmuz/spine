@@ -136,7 +136,7 @@ mod tests {
     #[test]
     fn author_creates_from_three_names() {
         let author = Author::from_str("ursula le guin").unwrap();
-        
+
         assert_eq!(author.first_name, "ursula");
         assert_eq!(author.surname, "le guin");
         assert_eq!(author.to_string(), "ursula le guin");

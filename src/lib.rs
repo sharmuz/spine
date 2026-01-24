@@ -72,34 +72,20 @@ impl Library {
 
     /// Searches library for books.
     #[must_use]
-    pub fn search(&self, search: &LibrarySearch) -> Vec<&Book> {
-        match search {
-            LibrarySearch {
-                author: None,
-                title: None,
-                isbn: None,
-                status: None,
-                tags: None,
-            } => Vec::new(),
-            LibrarySearch {
-                author,
-                title,
-                isbn,
-                status,
-                tags,
-            } => self
-                .books
-                .iter()
-                .filter(|&b| {
-                    title.is_none_or(|t| b.title.contains(t))
-                        && author.is_none_or(|a| b.author.to_string().contains(a))
-                        && isbn
-                            .is_none_or(|c| b.isbn.as_ref().is_some_and(|i| i.as_str().contains(c)))
-                        && status.is_none_or(|s| b.status == s)
-                        && tags.is_none_or(|ts| ts.iter().all(|t| b.tags.contains(t)))
-                })
-                .collect(),
-        }
+    pub fn search(&self, search: &LibrarySearch) -> impl Iterator<Item = &Book> {
+        self.books.iter().filter(|&b| {
+            search.title.is_none_or(|t| b.title.contains(t))
+                && search
+                    .author
+                    .is_none_or(|a| b.author.to_string().contains(a))
+                && search
+                    .isbn
+                    .is_none_or(|c| b.isbn.as_ref().is_some_and(|i| i.as_str().contains(c)))
+                && search.status.is_none_or(|s| b.status == s)
+                && search
+                    .tags
+                    .is_none_or(|ts| ts.iter().all(|t| b.tags.contains(t)))
+        })
     }
 
     /// Returns an iterator over all books in the library.
@@ -302,7 +288,7 @@ mod tests {
             ..Default::default()
         };
 
-        let search_hits = my_lib.search(&my_search);
+        let search_hits: Vec<_> = my_lib.search(&my_search).collect();
 
         assert_eq!(search_hits, vec![&*BURMESE_DAYS]);
     }
@@ -316,7 +302,7 @@ mod tests {
             ..Default::default()
         };
 
-        let search_hits = my_lib.search(&my_search);
+        let search_hits: Vec<_> = my_lib.search(&my_search).collect();
 
         assert_eq!(search_hits, vec![&*BURMESE_DAYS, &*EIGHTY_DAYS]);
     }
@@ -338,7 +324,7 @@ mod tests {
             ..Default::default()
         };
 
-        let search_hits = my_lib.search(&my_search);
+        let search_hits: Vec<_> = my_lib.search(&my_search).collect();
 
         assert_eq!(search_hits, vec![&*BURMESE_DAYS, &new_book]);
     }
@@ -352,7 +338,7 @@ mod tests {
             ..Default::default()
         };
 
-        let search_hits = my_lib.search(&my_search);
+        let search_hits: Vec<_> = my_lib.search(&my_search).collect();
 
         assert_eq!(search_hits, vec![&*KIM]);
     }
@@ -365,7 +351,7 @@ mod tests {
             ..Default::default()
         };
 
-        let search_hits = my_lib.search(&my_search);
+        let search_hits: Vec<_> = my_lib.search(&my_search).collect();
 
         assert_eq!(search_hits, vec![&*KIM]);
     }
@@ -378,7 +364,7 @@ mod tests {
             ..Default::default()
         };
 
-        let search_hits = my_lib.search(&my_search);
+        let search_hits: Vec<_> = my_lib.search(&my_search).collect();
 
         assert_eq!(search_hits, vec![&*KIM]);
     }
@@ -391,7 +377,7 @@ mod tests {
             ..Default::default()
         };
 
-        let search_hits = my_lib.search(&my_search);
+        let search_hits: Vec<_> = my_lib.search(&my_search).collect();
 
         assert!(search_hits.is_empty());
     }
@@ -404,20 +390,22 @@ mod tests {
             ..Default::default()
         };
 
-        let search_hits = my_lib.search(&my_search);
+        let search_hits: Vec<_> = my_lib.search(&my_search).collect();
 
         assert!(search_hits.is_empty());
     }
 
     #[test]
-    fn search_finds_nothing_by_nothing() {
+    fn search_finds_all_by_nothing() {
         let my_lib = library_with_two_books();
 
-        let search_hits = my_lib.search(&LibrarySearch {
-            ..Default::default()
-        });
+        let search_hits: Vec<_> = my_lib
+            .search(&LibrarySearch {
+                ..Default::default()
+            })
+            .collect();
 
-        assert!(search_hits.is_empty());
+        assert_eq!(search_hits, my_lib.all().collect::<Vec<_>>());
     }
 
     #[test]

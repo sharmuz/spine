@@ -230,14 +230,16 @@ fn exit_with_error(kind: clap::error::ErrorKind, msg: &str) -> ! {
 }
 
 fn get_search_hits<'a>(lib: &'a Library, search: &SearchArgs) -> Result<Vec<&'a Book>, io::Error> {
-    Ok(lib.search(&LibrarySearch {
-        title: search.title.as_deref(),
-        author: search.author.as_deref(),
-        isbn: search.isbn.as_deref(),
-        status: search.status.as_deref().map(Status::from_str).transpose()?,
-        tags: search.tags.as_ref(),
-        ..Default::default()
-    }))
+    Ok(lib
+        .search(&LibrarySearch {
+            title: search.title.as_deref(),
+            author: search.author.as_deref(),
+            isbn: search.isbn.as_deref(),
+            status: search.status.as_deref().map(Status::from_str).transpose()?,
+            tags: search.tags.as_ref(),
+            ..Default::default()
+        })
+        .collect::<Vec<&Book>>())
 }
 
 fn select_books(hits: Vec<&Book>) -> Result<Vec<Uuid>, io::Error> {
