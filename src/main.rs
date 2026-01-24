@@ -9,7 +9,7 @@ use anyhow::bail;
 use clap::{Args, CommandFactory, Parser, Subcommand};
 use uuid::Uuid;
 
-use spine::{Book, Isbn, Library, LibrarySearch, Status};
+use spine::{Author, Book, Isbn, Library, LibrarySearch, Status};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -162,7 +162,7 @@ fn main() -> anyhow::Result<()> {
         Commands::Add(add_args) => {
             let my_book = Book {
                 title: add_args.title,
-                author: add_args.author,
+                author: Author::from_str(&add_args.author)?,
                 isbn: add_args.isbn.map(|s| Isbn::from_str(&s)).transpose()?,
                 status: add_args.status.to_status(),
                 tags: add_args.tags,

@@ -4,7 +4,7 @@ use assert_cmd::cargo::cargo_bin_cmd;
 use predicates::prelude::*;
 use uuid::uuid;
 
-use spine::{Book, Isbn, Library, Status};
+use spine::{Author, Book, Isbn, Library, Status};
 
 #[test]
 fn spine_add_adds_new_book_to_existing_library() {
@@ -14,7 +14,7 @@ fn spine_add_adds_new_book_to_existing_library() {
     expected.add(Book {
         id: uuid!("a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8"),
         title: "hadji murat".to_owned(),
-        author: "leo tolstoy".to_owned(),
+        author: Author::from_str("leo tolstoy").unwrap(),
         isbn: Some(Isbn::from_str("9781847494818").unwrap()),
         status: Status::Read,
         tags: vec!["classic".into(), "russian".into()],
@@ -23,7 +23,7 @@ fn spine_add_adds_new_book_to_existing_library() {
     let mut book2 = Book {
         id: uuid!("b1b2b3b4-c1c2-d1d2-e1e2-e3e4e5e6e7e8"),
         title: "norwegian wood".to_owned(),
-        author: "haruki murakami".to_owned(),
+        author: Author::from_str("haruki murakami").unwrap(),
         status: Status::Reading,
         tags: vec!["japanese".into()],
         ..Default::default()

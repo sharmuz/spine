@@ -3,7 +3,10 @@
         {
             "id": "a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8",
             "title": "hadji murat",
-            "author": "leo tolstoy",
+            "author": {
+                "first_name": "leo",
+                "surname": "tolstoy"
+            },
             "isbn": {
                 "Isbn13": "9781847494818"
             },
@@ -16,7 +19,10 @@
         {
             "id": "b1b2b3b4-c1c2-d1d2-e1e2-e3e4e5e6e7e8",
             "title": "norwegian wood",
-            "author": "haruki murakami",
+            "author": {
+                "first_name": "haruki",
+                "surname": "murakami"
+            },
             "isbn": null,
             "status": "Reading",
             "tags": [
@@ -26,7 +32,10 @@
         {
             "id": "c1c2c3c4-d1d2-e1e2-f1f2-f3f4f5f6f7f8",
             "title": "cryptonomicon",
-            "author": "neal stephenson",
+            "author": {
+                "first_name": "neal",
+                "surname": "stephenson"
+            },
             "isbn": {
                 "Isbn13": "9780123456788"
             },

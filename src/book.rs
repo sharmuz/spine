@@ -11,7 +11,7 @@ use uuid::Uuid;
 pub struct Book {
     pub id: Uuid,
     pub title: String,
-    pub author: String,
+    pub author: Author,
     pub isbn: Option<Isbn>,
     pub status: Status,
     pub tags: Vec<String>,
