@@ -11,10 +11,16 @@ use uuid::Uuid;
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Book {
     pub id: Uuid,
+
     pub title: String,
+
     pub author: Author,
+
     pub isbn: Option<Isbn>,
+
     pub status: Status,
+
+    #[serde(default)]
     pub tags: HashSet<String>,
 }
 
