@@ -11,6 +11,7 @@ use uuid::Uuid;
 pub use crate::book::{Author, Book, Isbn, Status};
 
 pub mod book;
+pub mod cli;
 
 #[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Library {
