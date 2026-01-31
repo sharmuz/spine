@@ -1,4 +1,10 @@
 fn main() -> anyhow::Result<()> {
-    let result = spine::cli::main();
-    result
+    if std::env::args().any(|arg| arg == "--cli") {
+        spine::cli::main()
+    } else {
+        let terminal = ratatui::init();
+        let tui_result = spine::tui::Tui::new().run(terminal);
+        ratatui::restore();
+        Ok(tui_result?)
+    }
 }

@@ -12,6 +12,7 @@ pub use crate::book::{Author, Book, Isbn, Status};
 
 pub mod book;
 pub mod cli;
+pub mod tui;
 
 #[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Library {
