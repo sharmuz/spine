@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, path::Path};
 
 use ratatui::{
     DefaultTerminal, Frame,
@@ -11,15 +11,28 @@ use ratatui::{
     widgets::{Block, Paragraph, Widget},
 };
 
+use crate::Library;
+
 #[derive(Debug, Default)]
 pub struct Tui {
+    library: Library,
     is_running: bool,
 }
 
 impl Tui {
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new() -> anyhow::Result<Self> {
+        let path = Path::new("spine.json");
+        let my_lib = if path.exists() {
+            Library::open(path)?
+        } else {
+            Library::new()
+        };
+
+        Ok(Self {
+            library: my_lib,
+            is_running: false,
+        })
     }
 
     pub fn run(mut self, mut terminal: DefaultTerminal) -> io::Result<()> {
@@ -76,13 +89,14 @@ impl Widget for &Tui {
             .title(title.centered())
             .title_bottom(instructions.centered())
             .border_set(border::THICK);
-        let book_text = Text::from(vec![Line::from(vec![
-            "1984".into(),
-            " | ".into(),
-            "George Orwell".into(),
-        ])]);
 
-        Paragraph::new(book_text)
+        let books = self
+            .library
+            .all()
+            .map(|b| Line::from(b.to_string()))
+            .collect::<Vec<Line>>();
+
+        Paragraph::new(Text::from(books))
             .centered()
             .block(block)
             .render(area, buf);
@@ -95,7 +109,7 @@ mod tests {
 
     #[test]
     fn handle_key_event_quits_on_esc() {
-        let mut tui = Tui::new();
+        let mut tui = Tui::new().unwrap();
         tui.handle_key_event(KeyCode::Esc.into());
 
         assert!(!tui.is_running);
