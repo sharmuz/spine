@@ -19,6 +19,10 @@ pub struct Tui {
     is_running: bool,
 }
 
+enum Message {
+    Quit,
+}
+
 impl Tui {
     #[must_use]
     pub fn new() -> anyhow::Result<Self> {
@@ -39,7 +43,9 @@ impl Tui {
         self.is_running = true;
         while self.is_running {
             terminal.draw(|frame| self.draw(frame))?;
-            self.handle_events()?;
+            if let Some(message) = self.handle_events()? {
+                self.update(message);
+            }
         }
         Ok(())
     }
@@ -48,26 +54,26 @@ impl Tui {
         frame.render_widget(self, frame.area());
     }
 
-    fn handle_events(&mut self) -> io::Result<()> {
+    fn handle_events(&mut self) -> io::Result<Option<Message>> {
         match event::read()? {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                self.handle_key_event(key_event)
+                Ok(self.handle_key_event(key_event))
             }
-            _ => {}
-        };
-        Ok(())
-    }
-
-    fn handle_key_event(&mut self, key: KeyEvent) {
-        match (key.modifiers, key.code) {
-            (_, KeyCode::Esc) => self.quit(),
-            //
-            _ => {}
+            _ => Ok(None),
         }
     }
 
-    fn quit(&mut self) {
-        self.is_running = false;
+    fn handle_key_event(&mut self, key: KeyEvent) -> Option<Message> {
+        match (key.modifiers, key.code) {
+            (_, KeyCode::Esc) => Some(Message::Quit),
+            _ => None,
+        }
+    }
+
+    fn update(&mut self, msg: Message) {
+        match msg {
+            Message::Quit => self.is_running = false,
+        }
     }
 }
 
