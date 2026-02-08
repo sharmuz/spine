@@ -19,17 +19,17 @@ pub struct Tui {
     library: Library,
     cursor: usize,
     scroll_offset: usize,
+    num_visible: usize,
 }
 
 enum Message {
     Quit,
-    CursorUp,
-    CursorDown,
+    Resize(usize),
 }
 
 impl Tui {
     #[must_use]
-    pub fn new() -> anyhow::Result<Self> {
+    pub fn new(term_size: Rect) -> anyhow::Result<Self> {
         let path = Path::new("spine.json");
         let my_lib = if path.exists() {
             Library::open(path)?
@@ -39,6 +39,7 @@ impl Tui {
 
         Ok(Self {
             library: my_lib,
+            num_visible: term_size.height.saturating_sub(2).into(),
             ..Default::default()
         })
     }
@@ -63,6 +64,7 @@ impl Tui {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 Ok(self.handle_key_event(key_event))
             }
+            Event::Resize(_, rows) => Ok(Some(Message::Resize((rows.saturating_sub(2)).into()))),
             _ => Ok(None),
         }
     }
@@ -70,8 +72,6 @@ impl Tui {
     fn handle_key_event(&mut self, key: KeyEvent) -> Option<Message> {
         match (key.modifiers, key.code) {
             (_, KeyCode::Esc) => Some(Message::Quit),
-            (_, KeyCode::Up) => Some(Message::CursorUp),
-            (_, KeyCode::Down) => Some(Message::CursorDown),
             _ => None,
         }
     }
@@ -79,10 +79,7 @@ impl Tui {
     fn update(&mut self, msg: Message) {
         match msg {
             Message::Quit => self.is_running = false,
-            Message::CursorUp => self.cursor = self.cursor.saturating_sub(1),
-            Message::CursorDown => {
-                self.cursor = (self.cursor + 1).min(self.library.all().len().saturating_sub(1))
-            }
+            Message::Resize(rows) => self.num_visible = rows,
         }
     }
 }
@@ -126,7 +123,8 @@ mod tests {
 
     #[test]
     fn handle_key_event_quits_on_esc() {
-        let mut tui = Tui::new().unwrap();
+        let term_size = Rect::new(1, 2, 3, 4);
+        let mut tui = Tui::new(term_size).unwrap();
         tui.handle_key_event(KeyCode::Esc.into());
 
         assert!(!tui.is_running);
