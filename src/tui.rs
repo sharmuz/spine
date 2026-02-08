@@ -25,6 +25,8 @@ pub struct Tui {
 enum Message {
     Quit,
     Resize(usize),
+    CursorUp,
+    CursorDown,
 }
 
 impl Tui {
@@ -72,6 +74,8 @@ impl Tui {
     fn handle_key_event(&mut self, key: KeyEvent) -> Option<Message> {
         match (key.modifiers, key.code) {
             (_, KeyCode::Esc) => Some(Message::Quit),
+            (_, KeyCode::Up) => Some(Message::CursorUp),
+            (_, KeyCode::Down) => Some(Message::CursorDown),
             _ => None,
         }
     }
@@ -80,7 +84,28 @@ impl Tui {
         match msg {
             Message::Quit => self.is_running = false,
             Message::Resize(rows) => self.num_visible = rows,
+            Message::CursorUp => self.move_cursor_up(),
+            Message::CursorDown => self.move_cursor_down(),
         }
+    }
+
+    fn move_cursor_up(&mut self) {
+        let is_first_visible = self.cursor == self.scroll_offset;
+        let is_first_overall = self.cursor == 0;
+        if is_first_visible && !is_first_overall {
+            self.scroll_offset -= 1;
+        }
+        self.cursor = self.cursor.saturating_sub(1);
+    }
+
+    fn move_cursor_down(&mut self) {
+        let is_last_visible =
+            self.cursor == (self.scroll_offset + self.num_visible).saturating_sub(1);
+        let is_last_overall = self.cursor == self.library.all().len().saturating_sub(1);
+        if is_last_visible && !is_last_overall {
+            self.scroll_offset += 1;
+        }
+        self.cursor = (self.cursor + 1).min(self.library.all().len().saturating_sub(1));
     }
 }
 
