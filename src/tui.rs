@@ -27,6 +27,8 @@ enum Message {
     Resize(usize),
     CursorUp,
     CursorDown,
+    PageUp,
+    PageDown,
 }
 
 impl Tui {
@@ -76,6 +78,8 @@ impl Tui {
             (_, KeyCode::Esc) => Some(Message::Quit),
             (_, KeyCode::Up) => Some(Message::CursorUp),
             (_, KeyCode::Down) => Some(Message::CursorDown),
+            (_, KeyCode::PageUp) => Some(Message::PageUp),
+            (_, KeyCode::PageDown) => Some(Message::PageDown),
             _ => None,
         }
     }
@@ -86,6 +90,8 @@ impl Tui {
             Message::Resize(rows) => self.num_visible = rows,
             Message::CursorUp => self.move_cursor_up(),
             Message::CursorDown => self.move_cursor_down(),
+            Message::PageUp => self.move_page_up(),
+            Message::PageDown => self.move_page_down(),
         }
     }
 
@@ -106,6 +112,21 @@ impl Tui {
             self.scroll_offset += 1;
         }
         self.cursor = (self.cursor + 1).min(self.library.all().len().saturating_sub(1));
+    }
+
+    fn move_page_up(&mut self) {
+        self.scroll_offset = self.scroll_offset.saturating_sub(self.num_visible);
+
+        self.cursor = self.cursor.saturating_sub(self.num_visible);
+    }
+
+    fn move_page_down(&mut self) {
+        let top_next_page = self.scroll_offset + self.num_visible;
+        let top_last_full_page = self.library.all().len().saturating_sub(self.num_visible);
+        self.scroll_offset = top_next_page.min(top_last_full_page);
+
+        let next_page_cursor = self.cursor + self.num_visible;
+        self.cursor = next_page_cursor.min(self.library.all().len().saturating_sub(1));
     }
 }
 
