@@ -77,16 +77,19 @@ impl Library {
     #[must_use]
     pub fn search(&self, search: &LibrarySearch) -> impl Iterator<Item = &Book> {
         self.books.iter().filter(|&b| {
-            search.title.is_none_or(|t| b.title.contains(t))
+            search.title.as_ref().is_none_or(|t| b.title.contains(t))
                 && search
                     .author
+                    .as_ref()
                     .is_none_or(|a| b.author.to_string().contains(a))
                 && search
                     .isbn
+                    .as_ref()
                     .is_none_or(|c| b.isbn.as_ref().is_some_and(|i| i.as_str().contains(c)))
                 && search.status.is_none_or(|s| b.status == s)
                 && search
                     .tags
+                    .as_ref()
                     .is_none_or(|ts| ts.iter().all(|t| b.tags.contains(t)))
         })
     }
@@ -120,12 +123,12 @@ impl Library {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct LibrarySearch<'a> {
-    pub title: Option<&'a str>,
-    pub author: Option<&'a str>,
-    pub isbn: Option<&'a str>,
+pub struct LibrarySearch {
+    pub title: Option<String>,
+    pub author: Option<String>,
+    pub isbn: Option<String>,
     pub status: Option<Status>,
-    pub tags: Option<&'a Vec<String>>,
+    pub tags: Option<Vec<String>>,
 }
 
 #[cfg(test)]
@@ -287,7 +290,7 @@ mod tests {
     fn search_finds_single_hit_by_title() {
         let my_lib = library_with_two_books();
         let my_search = LibrarySearch {
-            title: Some("burmese"),
+            title: Some("burmese".into()),
             ..Default::default()
         };
 
@@ -301,7 +304,7 @@ mod tests {
         let mut my_lib = library_with_two_books();
         my_lib.add(EIGHTY_DAYS.clone());
         let my_search = LibrarySearch {
-            title: Some("days"),
+            title: Some("days".into()),
             ..Default::default()
         };
 
@@ -323,7 +326,7 @@ mod tests {
         };
         my_lib.add(new_book.clone());
         let my_search = LibrarySearch {
-            author: Some("george"),
+            author: Some("george".into()),
             ..Default::default()
         };
 
@@ -336,8 +339,8 @@ mod tests {
     fn search_finds_single_hit_by_title_and_isbn() {
         let my_lib = library_with_two_books();
         let my_search = LibrarySearch {
-            title: Some("kim"),
-            isbn: Some("9780199536467"),
+            title: Some("kim".into()),
+            isbn: Some("9780199536467".into()),
             ..Default::default()
         };
 
@@ -363,7 +366,7 @@ mod tests {
     fn search_finds_single_hit_by_tags() {
         let my_lib = library_with_two_books();
         let my_search = LibrarySearch {
-            tags: Some(&vec!["1800s".into(), "classic".into()]),
+            tags: Some(vec!["1800s".into(), "classic".into()]),
             ..Default::default()
         };
 
@@ -376,7 +379,7 @@ mod tests {
     fn search_finds_nothing_by_title() {
         let my_lib = library_with_two_books();
         let my_search = LibrarySearch {
-            title: Some("1984"),
+            title: Some("1984".into()),
             ..Default::default()
         };
 
@@ -389,7 +392,7 @@ mod tests {
     fn search_finds_nothing_by_tags() {
         let my_lib = library_with_two_books();
         let my_search = LibrarySearch {
-            tags: Some(&vec!["1800s".into(), "japanese".into()]),
+            tags: Some(vec!["1800s".into(), "japanese".into()]),
             ..Default::default()
         };
 

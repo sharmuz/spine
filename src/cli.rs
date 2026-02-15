@@ -152,7 +152,7 @@ where
             }
 
             if show_args.search.is_any_set() {
-                let hits = get_search_hits(&my_lib, &show_args.search)?;
+                let hits = get_search_hits(&my_lib, show_args.search)?;
                 if hits.is_empty() {
                     bail!("No books found matching given criteria.");
                 }
@@ -185,7 +185,7 @@ where
                 );
             }
 
-            let hits = get_search_hits(&my_lib, &search_args)?;
+            let hits = get_search_hits(&my_lib, search_args)?;
             let rm_ids = select_books(hits)?;
             for id in &rm_ids {
                 my_lib.remove(*id)?;
@@ -212,7 +212,7 @@ where
                 }
 
                 let new_status = status.to_status();
-                let hits = get_search_hits(&my_lib, &search)?;
+                let hits = get_search_hits(&my_lib, search)?;
                 let update_ids = select_books(hits)?;
                 for id in &update_ids {
                     my_lib.update_status(*id, new_status)?;
@@ -234,14 +234,14 @@ fn exit_with_error(kind: clap::error::ErrorKind, msg: &str) -> ! {
     cmd.error(kind, msg).exit();
 }
 
-fn get_search_hits<'a>(lib: &'a Library, search: &SearchArgs) -> Result<Vec<&'a Book>, io::Error> {
+fn get_search_hits<'a>(lib: &'a Library, search: SearchArgs) -> Result<Vec<&'a Book>, io::Error> {
     Ok(lib
         .search(&LibrarySearch {
-            title: search.title.as_deref(),
-            author: search.author.as_deref(),
-            isbn: search.isbn.as_deref(),
+            title: search.title,
+            author: search.author,
+            isbn: search.isbn,
             status: search.status.as_deref().map(Status::from_str).transpose()?,
-            tags: search.tags.as_ref(),
+            tags: search.tags,
             ..Default::default()
         })
         .collect::<Vec<&Book>>())
