@@ -1,4 +1,5 @@
 use std::{
+    ffi::OsString,
     io::{self, BufRead},
     num::ParseIntError,
     path::Path,
@@ -127,8 +128,12 @@ impl StatusFlag {
     }
 }
 
-pub fn main() -> anyhow::Result<()> {
-    let cli = Cli::parse();
+pub fn main<I, T>(args: I) -> anyhow::Result<()>
+where
+    I: IntoIterator<Item = T>,
+    T: Into<OsString> + Clone,
+{
+    let cli = Cli::parse_from(args);
 
     let path = Path::new("spine.json");
     let mut my_lib = if path.exists() {
