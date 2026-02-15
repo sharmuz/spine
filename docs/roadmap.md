@@ -4,14 +4,12 @@ Or, more like a list of issues and features I may address at some point :)
 
 ## v0.5
 - TUI using ratatui:
-  - Move current main.rs to cli.rs
-  - Create new main.rs which loads cli or tui
-  - Create tui.rs told hold Tui struct with methods:
-    - fn new: likely just Self::default()
-    - fn run: core loop to run the tui which calls terminal.draw then self.handle_event
-    - fn handle_event: match on key or mouse, calling self.handle_key_event as necessary
-    - fn handle_key_event: match on specific keys
-    - fn render: draw the tui, called by terminal.draw in run
+  - ~~Move current main.rs to cli.rs~~
+  - ~~Create new main.rs which loads cli or tui~~
+  - ~~Create tui.rs told hold Tui struct with appropriate methods (ELM arch?)~~
+  - ~~Display all books in library with scrollable view and movable cursor~~
+  - Filter books by search criteria
+  - Prettify book list: show status/tags, bigger font, spacing, capitalisation
 
 ## Beyond
 - More integration tests
@@ -22,3 +20,10 @@ Or, more like a list of issues and features I may address at some point :)
 - Import/export from/to format compatible with Hardcover/Goodreads/Storygraph
 - Leverage an API service (which?) to `validate` books - adding/correcting data
 - Utilise Hardcover.app API in other ways (TBD)
+- Improve TUI:
+  - Add new books
+  - Sort books
+  - Inspect individual books
+  - Update/edit books
+  - Remove books
+  - Save filters/searches
