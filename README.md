@@ -1,6 +1,6 @@
 # spine
 
-spine is a simple CLI tool for managing your book collection. It can store your data locally as well as sync with your account on popular websites [Hardcover](https://hardcover.app) or [Storygraph](https://thestorygraph.com/).
+spine is a simple CLI tool for managing your book collection.
 
 ## Quickstart
 
