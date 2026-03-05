@@ -32,6 +32,7 @@ enum Message {
     PageUp,
     PageDown,
     ApplyFilter,
+    ClearFilters,
 }
 
 impl Tui {
@@ -86,6 +87,7 @@ impl Tui {
             (_, KeyCode::PageUp) => Some(Message::PageUp),
             (_, KeyCode::PageDown) => Some(Message::PageDown),
             (_, KeyCode::Char('w')) => Some(Message::ApplyFilter),
+            (_, KeyCode::Char('c')) => Some(Message::ClearFilters),
             _ => None,
         }
     }
@@ -99,6 +101,7 @@ impl Tui {
             Message::PageUp => self.move_page_up(),
             Message::PageDown => self.move_page_down(),
             Message::ApplyFilter => self.apply_filter(),
+            Message::ClearFilters => self.clear_filters(),
         }
     }
 
@@ -142,6 +145,12 @@ impl Tui {
             ..Default::default()
         };
         self.filtered = self.library.search(&filter).map(|b| b.id).collect();
+        self.cursor = 0;
+        self.scroll_offset = 0;
+    }
+
+    fn clear_filters(&mut self) {
+        self.filtered = self.library.all().map(|b| b.id).collect();
         self.cursor = 0;
         self.scroll_offset = 0;
     }
