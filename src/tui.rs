@@ -31,8 +31,12 @@ enum Message {
     CursorDown,
     PageUp,
     PageDown,
-    ApplyFilter,
+    ApplyFilter(FilterType),
     ClearFilters,
+}
+
+enum FilterType {
+    StatusFilter(Status),
 }
 
 impl Tui {
@@ -86,7 +90,15 @@ impl Tui {
             (_, KeyCode::Down) => Some(Message::CursorDown),
             (_, KeyCode::PageUp) => Some(Message::PageUp),
             (_, KeyCode::PageDown) => Some(Message::PageDown),
-            (_, KeyCode::Char('w')) => Some(Message::ApplyFilter),
+            (_, KeyCode::Char('w')) => {
+                Some(Message::ApplyFilter(FilterType::StatusFilter(Status::Want)))
+            }
+            (_, KeyCode::Char('r')) => {
+                Some(Message::ApplyFilter(FilterType::StatusFilter(Status::Read)))
+            }
+            (_, KeyCode::Char('g')) => Some(Message::ApplyFilter(FilterType::StatusFilter(
+                Status::Reading,
+            ))),
             (_, KeyCode::Char('c')) => Some(Message::ClearFilters),
             _ => None,
         }
@@ -100,7 +112,7 @@ impl Tui {
             Message::CursorDown => self.move_cursor_down(),
             Message::PageUp => self.move_page_up(),
             Message::PageDown => self.move_page_down(),
-            Message::ApplyFilter => self.apply_filter(),
+            Message::ApplyFilter(filter) => self.apply_filter(filter),
             Message::ClearFilters => self.clear_filters(),
         }
     }
@@ -139,12 +151,18 @@ impl Tui {
         self.cursor = next_page_cursor.min(self.filtered.len().saturating_sub(1));
     }
 
-    fn apply_filter(&mut self) {
-        let filter = LibrarySearch {
-            status: Some(Status::Want),
-            ..Default::default()
+    fn apply_filter(&mut self, filter: FilterType) {
+        let search = if let FilterType::StatusFilter(status) = filter {
+            LibrarySearch {
+                status: Some(status),
+                ..Default::default()
+            }
+        } else {
+            LibrarySearch {
+                ..Default::default()
+            }
         };
-        self.filtered = self.library.search(&filter).map(|b| b.id).collect();
+        self.filtered = self.library.search(&search).map(|b| b.id).collect();
         self.cursor = 0;
         self.scroll_offset = 0;
     }
@@ -164,9 +182,11 @@ impl Widget for &Tui {
         let title = Line::from(" Spine - Your Books ".bold());
         let instructions = Line::from(vec![
             " Move up ".into(),
-            "<Up>".blue().bold(),
+            "<Up/PgUp>".blue().bold(),
             " Move down ".into(),
-            "<Down>".blue().bold(),
+            "<Down/PgDn>".blue().bold(),
+            " Filters ".into(),
+            "[W]ant/[R]ead/Readin[G] ".blue().bold(),
             " Quit ".into(),
             "<Esc> ".blue().bold(),
         ]);
