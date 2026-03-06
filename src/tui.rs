@@ -8,8 +8,10 @@ use ratatui::{
     style::Stylize,
     symbols::border,
     text::Line,
-    widgets::{Block, Clear, List, ListItem, Widget},
+    widgets::{Block, Clear, List, ListItem, Paragraph, Widget},
 };
+use tui_input::Input;
+use tui_input::backend::crossterm::EventHandler;
 use uuid::Uuid;
 
 use crate::{Library, LibrarySearch, Status};
@@ -23,6 +25,14 @@ pub struct Tui {
     num_visible: usize,
     filtered: Vec<Uuid>,
     popup: bool,
+    input_mode: InputMode,
+}
+
+#[derive(Debug, Default)]
+enum InputMode {
+    #[default]
+    Normal,
+    Editing,
 }
 
 enum Message {
@@ -77,8 +87,9 @@ impl Tui {
 
         if self.popup {
             let popup = Popup {
-                title: "Cool Popup".into(),
-                content: "Books!".into(),
+                title: " Filter by... ".into(),
+                content: " Tag: ".into(),
+                input: Input::from("classic"),
             };
             let popup_area = Popup::popup_area(frame.area(), 60, 20);
             frame.render_widget(popup, popup_area);
@@ -113,7 +124,7 @@ impl Tui {
                 Status::Reading,
             ))),
             (_, KeyCode::Char('c')) => Some(Message::ClearFilters),
-            (_, KeyCode::Char('p')) => Some(Message::ShowPopup),
+            (_, KeyCode::Char('f')) => Some(Message::ShowPopup),
             _ => None,
         }
     }
@@ -235,6 +246,7 @@ impl Widget for &Tui {
 struct Popup {
     title: String,
     content: String,
+    input: Input,
 }
 
 impl Popup {
@@ -253,10 +265,16 @@ impl Widget for Popup {
         Self: Sized,
     {
         Clear.render(area, buf);
-        let block = Block::bordered().title(Line::from(self.title).centered());
-        List::new(Line::from(self.content))
-            .block(block)
-            .render(area, buf);
+        let instructions = Line::from(vec![" Apply ".into(), "<Enter> ".blue().bold()]);
+        let block = Block::bordered()
+            .title(Line::from(self.title).centered())
+            .title_bottom(Line::from(instructions).centered());
+        Paragraph::new(Line::from(vec![
+            self.content.into(),
+            self.input.value().into(),
+        ]))
+        .block(block)
+        .render(area, buf);
     }
 }
 
