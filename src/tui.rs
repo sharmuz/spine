@@ -4,11 +4,11 @@ use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
     crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
-    layout::Rect,
+    layout::{Constraint, Flex, Layout, Rect},
     style::Stylize,
     symbols::border,
     text::Line,
-    widgets::{Block, List, ListItem, Widget},
+    widgets::{Block, Clear, List, ListItem, Widget},
 };
 use uuid::Uuid;
 
@@ -22,6 +22,7 @@ pub struct Tui {
     scroll_offset: usize,
     num_visible: usize,
     filtered: Vec<Uuid>,
+    popup: bool,
 }
 
 enum Message {
@@ -31,8 +32,10 @@ enum Message {
     CursorDown,
     PageUp,
     PageDown,
+    SelectItem,
     ApplyFilter(FilterType),
     ClearFilters,
+    ShowPopup,
 }
 
 enum FilterType {
@@ -71,6 +74,15 @@ impl Tui {
 
     fn draw(&self, frame: &mut Frame) {
         frame.render_widget(self, frame.area());
+
+        if self.popup {
+            let popup = Popup {
+                title: "Cool Popup".into(),
+                content: "Books!".into(),
+            };
+            let popup_area = Popup::popup_area(frame.area(), 60, 20);
+            frame.render_widget(popup, popup_area);
+        };
     }
 
     fn handle_events(&mut self) -> io::Result<Option<Message>> {
@@ -90,6 +102,7 @@ impl Tui {
             (_, KeyCode::Down) => Some(Message::CursorDown),
             (_, KeyCode::PageUp) => Some(Message::PageUp),
             (_, KeyCode::PageDown) => Some(Message::PageDown),
+            (_, KeyCode::Enter) => Some(Message::SelectItem),
             (_, KeyCode::Char('w')) => {
                 Some(Message::ApplyFilter(FilterType::StatusFilter(Status::Want)))
             }
@@ -100,6 +113,7 @@ impl Tui {
                 Status::Reading,
             ))),
             (_, KeyCode::Char('c')) => Some(Message::ClearFilters),
+            (_, KeyCode::Char('p')) => Some(Message::ShowPopup),
             _ => None,
         }
     }
@@ -112,8 +126,14 @@ impl Tui {
             Message::CursorDown => self.move_cursor_down(),
             Message::PageUp => self.move_page_up(),
             Message::PageDown => self.move_page_down(),
+            Message::SelectItem => {
+                if self.popup {
+                    self.popup = false
+                }
+            }
             Message::ApplyFilter(filter) => self.apply_filter(filter),
             Message::ClearFilters => self.clear_filters(),
+            Message::ShowPopup => self.popup = true,
         }
     }
 
@@ -208,6 +228,35 @@ impl Widget for &Tui {
             .collect::<List>();
 
         books.block(block).render(area, buf);
+    }
+}
+
+#[derive(Debug, Default)]
+struct Popup {
+    title: String,
+    content: String,
+}
+
+impl Popup {
+    fn popup_area(area: Rect, percent_x: u16, percent_y: u16) -> Rect {
+        let vertical = Layout::vertical([Constraint::Percentage(percent_y)]).flex(Flex::Center);
+        let horizontal = Layout::horizontal([Constraint::Percentage(percent_x)]).flex(Flex::Center);
+        let [area] = vertical.areas(area);
+        let [area] = horizontal.areas(area);
+        area
+    }
+}
+
+impl Widget for Popup {
+    fn render(self, area: Rect, buf: &mut Buffer)
+    where
+        Self: Sized,
+    {
+        Clear.render(area, buf);
+        let block = Block::bordered().title(Line::from(self.title).centered());
+        List::new(Line::from(self.content))
+            .block(block)
+            .render(area, buf);
     }
 }
 
