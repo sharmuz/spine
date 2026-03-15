@@ -24,7 +24,7 @@ pub struct Tui {
     scroll_offset: usize,
     num_visible: usize,
     filtered: Vec<Uuid>,
-    popup: bool,
+    popup: bool,  // TODO: Change to Option<Popup>
     input_mode: InputMode,
 }
 
@@ -43,13 +43,9 @@ enum Message {
     PageUp,
     PageDown,
     SelectItem,
-    ApplyFilter(FilterType),
+    ApplyFilter(LibrarySearch),
     ClearFilters,
     ShowPopup,
-}
-
-enum FilterType {
-    StatusFilter(Status),
 }
 
 impl Tui {
@@ -86,6 +82,7 @@ impl Tui {
         frame.render_widget(self, frame.area());
 
         if self.popup {
+            // TODO: Move popup instance creation to dedicate method called from Tui::update
             let popup = Popup {
                 title: " Filter by... ".into(),
                 content: " Tag: ".into(),
@@ -96,6 +93,7 @@ impl Tui {
         };
     }
 
+    // TODO: Change to handle Normal vs. Editing mode ?
     fn handle_events(&mut self) -> io::Result<Option<Message>> {
         match event::read()? {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
@@ -114,15 +112,18 @@ impl Tui {
             (_, KeyCode::PageUp) => Some(Message::PageUp),
             (_, KeyCode::PageDown) => Some(Message::PageDown),
             (_, KeyCode::Enter) => Some(Message::SelectItem),
-            (_, KeyCode::Char('w')) => {
-                Some(Message::ApplyFilter(FilterType::StatusFilter(Status::Want)))
-            }
-            (_, KeyCode::Char('r')) => {
-                Some(Message::ApplyFilter(FilterType::StatusFilter(Status::Read)))
-            }
-            (_, KeyCode::Char('g')) => Some(Message::ApplyFilter(FilterType::StatusFilter(
-                Status::Reading,
-            ))),
+            (_, KeyCode::Char('w')) => Some(Message::ApplyFilter(LibrarySearch {
+                status: Some(Status::Want),
+                ..Default::default()
+            })),
+            (_, KeyCode::Char('r')) => Some(Message::ApplyFilter(LibrarySearch {
+                status: Some(Status::Read),
+                ..Default::default()
+            })),
+            (_, KeyCode::Char('g')) => Some(Message::ApplyFilter(LibrarySearch {
+                status: Some(Status::Reading),
+                ..Default::default()
+            })),
             (_, KeyCode::Char('c')) => Some(Message::ClearFilters),
             (_, KeyCode::Char('f')) => Some(Message::ShowPopup),
             _ => None,
@@ -144,6 +145,7 @@ impl Tui {
             }
             Message::ApplyFilter(filter) => self.apply_filter(filter),
             Message::ClearFilters => self.clear_filters(),
+            // TODO: Create Popup instance and set to self.popup and change self.input_mode to Editing
             Message::ShowPopup => self.popup = true,
         }
     }
@@ -182,18 +184,9 @@ impl Tui {
         self.cursor = next_page_cursor.min(self.filtered.len().saturating_sub(1));
     }
 
-    fn apply_filter(&mut self, filter: FilterType) {
-        let search = if let FilterType::StatusFilter(status) = filter {
-            LibrarySearch {
-                status: Some(status),
-                ..Default::default()
-            }
-        } else {
-            LibrarySearch {
-                ..Default::default()
-            }
-        };
-        self.filtered = self.library.search(&search).map(|b| b.id).collect();
+    // TODO: Handle FilterType being CustomFilter
+    fn apply_filter(&mut self, filter: LibrarySearch) {
+        self.filtered = self.library.search(&filter).map(|b| b.id).collect();
         self.cursor = 0;
         self.scroll_offset = 0;
     }
@@ -259,6 +252,7 @@ impl Popup {
     }
 }
 
+// TODO: Update for Editing mode based on self.input and cursor position
 impl Widget for Popup {
     fn render(self, area: Rect, buf: &mut Buffer)
     where
