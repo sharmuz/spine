@@ -24,7 +24,7 @@ pub struct Tui {
     scroll_offset: usize,
     num_visible: usize,
     filtered: Vec<Uuid>,
-    popup: bool,  // TODO: Change to Option<Popup>
+    popup: Option<Popup>,
     input_mode: InputMode,
 }
 
@@ -81,15 +81,9 @@ impl Tui {
     fn draw(&self, frame: &mut Frame) {
         frame.render_widget(self, frame.area());
 
-        if self.popup {
-            // TODO: Move popup instance creation to dedicate method called from Tui::update
-            let popup = Popup {
-                title: " Filter by... ".into(),
-                content: " Tag: ".into(),
-                input: Input::from("classic"),
-            };
+        if self.popup.is_some() {
             let popup_area = Popup::popup_area(frame.area(), 60, 20);
-            frame.render_widget(popup, popup_area);
+            frame.render_widget(self.popup.as_ref(), popup_area);
         };
     }
 
@@ -139,14 +133,20 @@ impl Tui {
             Message::PageUp => self.move_page_up(),
             Message::PageDown => self.move_page_down(),
             Message::SelectItem => {
-                if self.popup {
-                    self.popup = false
+                if self.popup.is_some() {
+                    self.popup = None
                 }
             }
             Message::ApplyFilter(filter) => self.apply_filter(filter),
             Message::ClearFilters => self.clear_filters(),
-            // TODO: Create Popup instance and set to self.popup and change self.input_mode to Editing
-            Message::ShowPopup => self.popup = true,
+            // TODO: Create Popup::new or other method to create filter popup instance?
+            Message::ShowPopup => {
+                self.popup = Some(Popup {
+                    title: " Filter by... ".into(),
+                    content: " Tag: ".into(),
+                    ..Default::default()
+                })
+            }
         }
     }
 
@@ -184,7 +184,6 @@ impl Tui {
         self.cursor = next_page_cursor.min(self.filtered.len().saturating_sub(1));
     }
 
-    // TODO: Handle FilterType being CustomFilter
     fn apply_filter(&mut self, filter: LibrarySearch) {
         self.filtered = self.library.search(&filter).map(|b| b.id).collect();
         self.cursor = 0;
@@ -253,7 +252,7 @@ impl Popup {
 }
 
 // TODO: Update for Editing mode based on self.input and cursor position
-impl Widget for Popup {
+impl Widget for &Popup {
     fn render(self, area: Rect, buf: &mut Buffer)
     where
         Self: Sized,
@@ -261,10 +260,10 @@ impl Widget for Popup {
         Clear.render(area, buf);
         let instructions = Line::from(vec![" Apply ".into(), "<Enter> ".blue().bold()]);
         let block = Block::bordered()
-            .title(Line::from(self.title).centered())
+            .title(Line::from(self.title.clone()).centered())
             .title_bottom(Line::from(instructions).centered());
         Paragraph::new(Line::from(vec![
-            self.content.into(),
+            self.content.clone().into(),
             self.input.value().into(),
         ]))
         .block(block)
