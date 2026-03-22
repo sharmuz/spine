@@ -3,7 +3,7 @@ use std::{collections::HashSet, io, path::Path};
 use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
-    crossterm::event::{self, Event, KeyCode, KeyEventKind},
+    crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     layout::{Constraint, Flex, Layout, Rect},
     style::Stylize,
     symbols::border,
@@ -46,6 +46,7 @@ enum Message {
     ApplyFilter(LibrarySearch),
     ClearFilters,
     ShowPopup,
+    ClosePopup,
     HandleInput(Event),
 }
 
@@ -103,7 +104,7 @@ impl Tui {
         if let Event::Key(key) = event {
             match self.input_mode {
                 InputMode::Normal => match (key.modifiers, key.code) {
-                    (_, KeyCode::Esc) => Some(Message::Quit),
+                    (KeyModifiers::CONTROL, KeyCode::Char('c')) => Some(Message::Quit),
                     (_, KeyCode::Up) => Some(Message::CursorUp),
                     (_, KeyCode::Down) => Some(Message::CursorDown),
                     (_, KeyCode::PageUp) => Some(Message::PageUp),
@@ -131,6 +132,8 @@ impl Tui {
                             tags: Some(vec![popup.input.value_and_reset()]),
                             ..Default::default()
                         })),
+                        (_, KeyCode::Esc) => Some(Message::ClosePopup),
+                        (KeyModifiers::CONTROL, KeyCode::Char('c')) => Some(Message::Quit),
                         _ => Some(Message::HandleInput(event.clone())),
                     },
                     None => None,
@@ -156,8 +159,7 @@ impl Tui {
             }
             Message::ApplyFilter(filter) => {
                 self.apply_filter(filter);
-                self.popup = None;
-                self.input_mode = InputMode::Normal;
+                self.update(Message::ClosePopup);
             }
             Message::ClearFilters => self.clear_filters(),
             // TODO: Create Popup::new or other method to create filter popup instance?
@@ -168,6 +170,10 @@ impl Tui {
                     ..Default::default()
                 });
                 self.input_mode = InputMode::Editing;
+            }
+            Message::ClosePopup => {
+                self.popup = None;
+                self.input_mode = InputMode::Normal;
             }
             Message::HandleInput(event) => {
                 if let Some(popup) = &mut self.popup {
@@ -238,7 +244,7 @@ impl Widget for &Tui {
             " Filters ".into(),
             "[W]ant/[R]ead/Readin[G] ".blue().bold(),
             " Quit ".into(),
-            "<Esc> ".blue().bold(),
+            "<Ctrl+c> ".blue().bold(),
         ]);
         let block = Block::bordered()
             .title(title.centered())
@@ -285,7 +291,12 @@ impl Widget for &Popup {
         Self: Sized,
     {
         Clear.render(area, buf);
-        let instructions = Line::from(vec![" Apply ".into(), "<Enter> ".blue().bold()]);
+        let instructions = Line::from(vec![
+            " Cancel ".into(),
+            "<Esc> ".blue().bold(),
+            " Apply ".into(),
+            "<Enter> ".blue().bold(),
+        ]);
         let block = Block::bordered()
             .title(Line::from(self.title.clone()).centered())
             .title_bottom(Line::from(instructions).centered());
@@ -301,12 +312,16 @@ impl Widget for &Popup {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ratatui::crossterm::event::KeyEvent;
 
     #[test]
-    fn handle_key_event_quits_on_esc() {
+    fn handle_key_event_quits_on_ctrl_c() {
         let term_size = Rect::new(1, 2, 3, 4);
         let mut tui = Tui::new(term_size).unwrap();
-        tui.handle_key_event(Event::Key(KeyCode::Esc.into()));
+        tui.handle_key_event(Event::Key(KeyEvent::new(
+            KeyCode::Char('c'),
+            KeyModifiers::CONTROL,
+        )));
 
         assert!(!tui.is_running);
     }
