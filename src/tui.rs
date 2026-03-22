@@ -3,7 +3,7 @@ use std::{collections::HashSet, io, path::Path};
 use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
-    crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
+    crossterm::event::{self, Event, KeyCode, KeyEventKind},
     layout::{Constraint, Flex, Layout, Rect},
     style::Stylize,
     symbols::border,
@@ -46,6 +46,7 @@ enum Message {
     ApplyFilter(LibrarySearch),
     ClearFilters,
     ShowPopup,
+    HandleInput(Event),
 }
 
 impl Tui {
@@ -87,40 +88,56 @@ impl Tui {
         };
     }
 
-    // TODO: Change to handle Normal vs. Editing mode ?
     fn handle_events(&mut self) -> io::Result<Option<Message>> {
-        match event::read()? {
+        let event = event::read()?;
+        match event {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                Ok(self.handle_key_event(key_event))
+                Ok(self.handle_key_event(event))
             }
             Event::Resize(_, rows) => Ok(Some(Message::Resize((rows.saturating_sub(2)).into()))),
             _ => Ok(None),
         }
     }
 
-    fn handle_key_event(&mut self, key: KeyEvent) -> Option<Message> {
-        match (key.modifiers, key.code) {
-            (_, KeyCode::Esc) => Some(Message::Quit),
-            (_, KeyCode::Up) => Some(Message::CursorUp),
-            (_, KeyCode::Down) => Some(Message::CursorDown),
-            (_, KeyCode::PageUp) => Some(Message::PageUp),
-            (_, KeyCode::PageDown) => Some(Message::PageDown),
-            (_, KeyCode::Enter) => Some(Message::SelectItem),
-            (_, KeyCode::Char('w')) => Some(Message::ApplyFilter(LibrarySearch {
-                status: Some(Status::Want),
-                ..Default::default()
-            })),
-            (_, KeyCode::Char('r')) => Some(Message::ApplyFilter(LibrarySearch {
-                status: Some(Status::Read),
-                ..Default::default()
-            })),
-            (_, KeyCode::Char('g')) => Some(Message::ApplyFilter(LibrarySearch {
-                status: Some(Status::Reading),
-                ..Default::default()
-            })),
-            (_, KeyCode::Char('c')) => Some(Message::ClearFilters),
-            (_, KeyCode::Char('f')) => Some(Message::ShowPopup),
-            _ => None,
+    fn handle_key_event(&mut self, event: Event) -> Option<Message> {
+        if let Event::Key(key) = event {
+            match self.input_mode {
+                InputMode::Normal => match (key.modifiers, key.code) {
+                    (_, KeyCode::Esc) => Some(Message::Quit),
+                    (_, KeyCode::Up) => Some(Message::CursorUp),
+                    (_, KeyCode::Down) => Some(Message::CursorDown),
+                    (_, KeyCode::PageUp) => Some(Message::PageUp),
+                    (_, KeyCode::PageDown) => Some(Message::PageDown),
+                    (_, KeyCode::Enter) => Some(Message::SelectItem),
+                    (_, KeyCode::Char('w')) => Some(Message::ApplyFilter(LibrarySearch {
+                        status: Some(Status::Want),
+                        ..Default::default()
+                    })),
+                    (_, KeyCode::Char('r')) => Some(Message::ApplyFilter(LibrarySearch {
+                        status: Some(Status::Read),
+                        ..Default::default()
+                    })),
+                    (_, KeyCode::Char('g')) => Some(Message::ApplyFilter(LibrarySearch {
+                        status: Some(Status::Reading),
+                        ..Default::default()
+                    })),
+                    (_, KeyCode::Char('c')) => Some(Message::ClearFilters),
+                    (_, KeyCode::Char('f')) => Some(Message::ShowPopup),
+                    _ => None,
+                },
+                InputMode::Editing => match &mut self.popup {
+                    Some(popup) => match (key.modifiers, key.code) {
+                        (_, KeyCode::Enter) => Some(Message::ApplyFilter(LibrarySearch {
+                            tags: Some(vec![popup.input.value_and_reset()]),
+                            ..Default::default()
+                        })),
+                        _ => Some(Message::HandleInput(event.clone())),
+                    },
+                    None => None,
+                },
+            }
+        } else {
+            None
         }
     }
 
@@ -137,7 +154,11 @@ impl Tui {
                     self.popup = None
                 }
             }
-            Message::ApplyFilter(filter) => self.apply_filter(filter),
+            Message::ApplyFilter(filter) => {
+                self.apply_filter(filter);
+                self.popup = None;
+                self.input_mode = InputMode::Normal;
+            }
             Message::ClearFilters => self.clear_filters(),
             // TODO: Create Popup::new or other method to create filter popup instance?
             Message::ShowPopup => {
@@ -145,7 +166,13 @@ impl Tui {
                     title: " Filter by... ".into(),
                     content: " Tag: ".into(),
                     ..Default::default()
-                })
+                });
+                self.input_mode = InputMode::Editing;
+            }
+            Message::HandleInput(event) => {
+                if let Some(popup) = &mut self.popup {
+                    popup.input.handle_event(&event);
+                }
             }
         }
     }
@@ -279,7 +306,7 @@ mod tests {
     fn handle_key_event_quits_on_esc() {
         let term_size = Rect::new(1, 2, 3, 4);
         let mut tui = Tui::new(term_size).unwrap();
-        tui.handle_key_event(KeyCode::Esc.into());
+        tui.handle_key_event(Event::Key(KeyCode::Esc.into()));
 
         assert!(!tui.is_running);
     }
