@@ -28,7 +28,7 @@ pub struct Tui {
     input_mode: InputMode,
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 enum InputMode {
     #[default]
     Normal,
@@ -80,6 +80,7 @@ impl Tui {
         Ok(())
     }
 
+    // TODO: Refactor to call draw_popup and draw_cursor
     fn draw(&self, frame: &mut Frame) {
         frame.render_widget(self, frame.area());
 
@@ -87,6 +88,14 @@ impl Tui {
             let popup_area = Popup::popup_area(frame.area(), 60, 20);
             frame.render_widget(self.popup.as_ref(), popup_area);
         };
+
+        if self.input_mode == InputMode::Editing {
+            if let Some(popup) = &self.popup {
+                let popup_area = Popup::popup_area(frame.area(), 60, 20);
+                let x_offset = (popup.input.visual_cursor() + 7) as u16;
+                frame.set_cursor_position((popup_area.x + x_offset, popup_area.y + 1));
+            }
+        }
     }
 
     fn handle_events(&mut self) -> io::Result<Option<Message>> {
@@ -284,7 +293,6 @@ impl Popup {
     }
 }
 
-// TODO: Update for Editing mode based on self.input and cursor position
 impl Widget for &Popup {
     fn render(self, area: Rect, buf: &mut Buffer)
     where
