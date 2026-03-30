@@ -14,6 +14,7 @@ pub mod book;
 pub mod cli;
 pub mod tui;
 
+/// A representation of a user's personal library.
 #[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Library {
     books: Vec<Book>,
@@ -33,7 +34,7 @@ impl Library {
         self.books.push(book);
     }
 
-    /// Removes a book from the library
+    /// Removes a book from the library.
     pub fn remove(&mut self, id: Uuid) -> Result<(), io::Error> {
         let rm_idx = self.get_index(id)?;
         self.books.remove(rm_idx);
@@ -49,6 +50,7 @@ impl Library {
         Ok(())
     }
 
+    /// Tags a book with one or more tags.
     pub fn tag<I>(&mut self, id: Uuid, tags: I) -> Result<(), io::Error>
     where
         I: IntoIterator<Item = String>,
@@ -59,6 +61,7 @@ impl Library {
         Ok(())
     }
 
+    /// Removes one or more tags from a book.
     pub fn untag(&mut self, id: Uuid, tags: &Vec<String>) -> Result<(), io::Error> {
         let tag_idx = self.get_index(id)?;
         self.books[tag_idx].tags.retain(|t| !tags.contains(t));
@@ -73,7 +76,9 @@ impl Library {
             .ok_or_else(|| io::Error::other("No books found."))
     }
 
-    /// Searches library for books.
+    /// Searches the library for books matching the given criteria.
+    ///
+    /// Returns iterator over matches or all books if no criteria are set on `search`.
     #[must_use]
     pub fn search(&self, search: &LibrarySearch) -> impl Iterator<Item = &Book> {
         self.books.iter().filter(|&b| {
@@ -122,6 +127,9 @@ impl Library {
     }
 }
 
+/// A set of criteria to search for Books.
+///
+/// All fields are optional.
 #[derive(Clone, Debug, Default)]
 pub struct LibrarySearch {
     pub title: Option<String>,

@@ -8,6 +8,7 @@ use std::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+/// A representation of a book.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Book {
     pub id: Uuid,
@@ -30,6 +31,7 @@ impl Display for Book {
     }
 }
 
+/// The name of an author.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Author {
     pub first_name: String,
@@ -64,6 +66,9 @@ impl FromStr for Author {
     }
 }
 
+/// An ISBN referring to an individual book.
+///
+/// Can be in 10 or 13-digit format.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Isbn {
     Isbn10(String),
@@ -112,6 +117,7 @@ impl FromStr for Isbn {
     }
 }
 
+/// The status of a book.
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Status {
     #[default]
