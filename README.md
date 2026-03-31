@@ -28,7 +28,7 @@ spine --tui
 Install via [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html):
 
 ```shell
-cargo install --locked spine-books
+cargo install --locked --git https://github.com/sharmuz/spine
 ```
 
 ## Usage
