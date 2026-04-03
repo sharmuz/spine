@@ -8,13 +8,13 @@ use ratatui::{
     style::Stylize,
     symbols::border,
     text::Line,
-    widgets::{Block, Clear, List, ListItem, Paragraph, Widget},
+    widgets::{Block, Cell, Clear, Paragraph, Row, Table, Widget},
 };
 use tui_input::Input;
 use tui_input::backend::crossterm::EventHandler;
 use uuid::Uuid;
 
-use crate::{Library, LibrarySearch, Status};
+use crate::{Book, Library, LibrarySearch, Status};
 
 #[derive(Debug, Default)]
 pub struct Tui {
@@ -268,9 +268,15 @@ impl Widget for &Tui {
             .enumerate()
             .skip(self.scroll_offset)
             .take(usize::from(area.height))
-            .map(|(i, b)| (i, ListItem::from(b.to_string())))
-            .map(|(i, t)| if i == self.cursor { t.green() } else { t })
-            .collect::<List>();
+            .map(|(i, b)| (i, book_to_row(b)))
+            .map(|(i, r)| {
+                if i == self.cursor {
+                    r.green().on_black().bold()
+                } else {
+                    r
+                }
+            })
+            .collect::<Table>();
 
         books.block(block).render(area, buf);
     }
@@ -315,6 +321,14 @@ impl Widget for &Popup {
         .block(block)
         .render(area, buf);
     }
+}
+
+fn book_to_row(book: &Book) -> Row<'_> {
+    Row::new(vec![
+        Cell::new(book.title.to_string()),
+        Cell::new(book.author.surname.to_string()),
+        Cell::new(format!("{:?}", book.status)),
+    ])
 }
 
 #[cfg(test)]
