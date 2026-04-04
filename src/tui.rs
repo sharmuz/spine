@@ -277,7 +277,7 @@ impl Widget for &Tui {
             .map(|(i, b)| (i, book_to_row(b)))
             .map(|(i, r)| {
                 if i == self.cursor {
-                    r.green().on_black().bold()
+                    r.green().on_dark_gray().bold()
                 } else {
                     r
                 }
