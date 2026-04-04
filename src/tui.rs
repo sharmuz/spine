@@ -283,7 +283,9 @@ impl Widget for &Tui {
                 }
             })
             .collect::<Table>()
-            .widths(Constraint::from_ratios([(1, 3), (1, 6), (1, 6), (1, 3)]))
+            .widths(Constraint::from_percentages([40, 20, 10, 30]))
+            .column_spacing(2)
+            .flex(Flex::SpaceEvenly)
             .header(header);
 
         table.block(block).render(area, buf);
