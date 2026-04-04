@@ -63,7 +63,7 @@ impl Tui {
 
         Ok(Self {
             library: my_lib,
-            num_visible: term_size.height.saturating_sub(2).into(),
+            num_visible: term_size.height.saturating_sub(3).into(),
             filtered: all_ids,
             ..Default::default()
         })
@@ -104,7 +104,7 @@ impl Tui {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 Ok(self.handle_key_event(event))
             }
-            Event::Resize(_, rows) => Ok(Some(Message::Resize((rows.saturating_sub(2)).into()))),
+            Event::Resize(_, rows) => Ok(Some(Message::Resize((rows.saturating_sub(3)).into()))),
             _ => Ok(None),
         }
     }
@@ -261,7 +261,13 @@ impl Widget for &Tui {
             .border_set(border::THICK);
 
         let filtered_set: HashSet<Uuid> = self.filtered.iter().copied().collect();
-        let books = self
+        let header = Row::new(vec![
+            Cell::new("Title"),
+            Cell::new("Author"),
+            Cell::new("Status"),
+            Cell::new("Tags"),
+        ]).black().on_white();
+        let table = self
             .library
             .all()
             .filter(|b| filtered_set.contains(&b.id))
@@ -276,9 +282,11 @@ impl Widget for &Tui {
                     r
                 }
             })
-            .collect::<Table>();
+            .collect::<Table>()
+            .widths(Constraint::from_ratios([(1, 3), (1, 6), (1, 6), (1, 3)]))
+            .header(header);
 
-        books.block(block).render(area, buf);
+        table.block(block).render(area, buf);
     }
 }
 
@@ -328,6 +336,7 @@ fn book_to_row(book: &Book) -> Row<'_> {
         Cell::new(book.title.to_string()),
         Cell::new(book.author.surname.to_string()),
         Cell::new(format!("{:?}", book.status)),
+        Cell::new(book.tags.iter().map(|t| t.to_string()).collect::<Vec<_>>().join(", ")),
     ])
 }
 
