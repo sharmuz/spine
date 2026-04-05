@@ -16,6 +16,9 @@ use uuid::Uuid;
 
 use crate::{Book, Library, LibrarySearch, Status};
 
+const ROW_HEIGHT: u16 = 3;
+const CHROME_HEIGHT: u16 = 3;
+
 #[derive(Debug, Default)]
 pub struct Tui {
     is_running: bool,
@@ -60,10 +63,11 @@ impl Tui {
             Library::new()
         };
         let all_ids = my_lib.all().map(|b| b.id).collect();
+        let num_visible = term_size.height.saturating_sub(CHROME_HEIGHT) / ROW_HEIGHT;
 
         Ok(Self {
             library: my_lib,
-            num_visible: term_size.height.saturating_sub(3).into(),
+            num_visible: num_visible.into(),
             filtered: all_ids,
             ..Default::default()
         })
@@ -104,7 +108,9 @@ impl Tui {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 Ok(self.handle_key_event(event))
             }
-            Event::Resize(_, rows) => Ok(Some(Message::Resize((rows.saturating_sub(3)).into()))),
+            Event::Resize(_, height) => Ok(Some(Message::Resize(
+                (height.saturating_sub(CHROME_HEIGHT) / ROW_HEIGHT).into(),
+            ))),
             _ => Ok(None),
         }
     }
@@ -204,11 +210,12 @@ impl Tui {
     fn move_cursor_down(&mut self) {
         let is_last_visible =
             self.cursor == (self.scroll_offset + self.num_visible).saturating_sub(1);
-        let is_last_overall = self.cursor == self.filtered.len().saturating_sub(1);
+        let final_item = self.filtered.len().saturating_sub(1);
+        let is_last_overall = self.cursor == final_item;
         if is_last_visible && !is_last_overall {
             self.scroll_offset += 1;
         }
-        self.cursor = (self.cursor + 1).min(self.filtered.len().saturating_sub(1));
+        self.cursor = (self.cursor + 1).min(final_item);
     }
 
     fn move_page_up(&mut self) {
@@ -223,7 +230,8 @@ impl Tui {
         self.scroll_offset = top_next_page.min(top_last_full_page);
 
         let next_page_cursor = self.cursor + self.num_visible;
-        self.cursor = next_page_cursor.min(self.filtered.len().saturating_sub(1));
+        let final_item = self.filtered.len().saturating_sub(1);
+        self.cursor = next_page_cursor.min(final_item);
     }
 
     fn apply_filter(&mut self, filter: LibrarySearch) {
@@ -266,14 +274,18 @@ impl Widget for &Tui {
             Cell::new("Author"),
             Cell::new("Status"),
             Cell::new("Tags"),
-        ]).black().on_white();
+        ])
+        .black()
+        .on_white();
         let table = self
             .library
             .all()
             .filter(|b| filtered_set.contains(&b.id))
             .enumerate()
             .skip(self.scroll_offset)
-            .take(usize::from(area.height))
+            .take(usize::from(
+                area.height.saturating_sub(CHROME_HEIGHT) / ROW_HEIGHT,
+            ))
             .map(|(i, b)| (i, book_to_row(b)))
             .map(|(i, r)| {
                 if i == self.cursor {
@@ -334,12 +346,21 @@ impl Widget for &Popup {
 }
 
 fn book_to_row(book: &Book) -> Row<'_> {
-    Row::new(vec![
-        Cell::new(book.title.to_string()),
-        Cell::new(book.author.surname.to_string()),
-        Cell::new(format!("{:?}", book.status)),
-        Cell::new(book.tags.iter().map(|t| t.to_string()).collect::<Vec<_>>().join(", ")),
-    ])
+    let vert_pad = '\n'.to_string().repeat(usize::from(ROW_HEIGHT - 1) / 2);
+    vec![
+        book.title.to_string(),
+        book.author.surname.to_string(),
+        format!("{:?}", book.status),
+        book.tags
+            .iter()
+            .map(|t| t.to_string())
+            .collect::<Vec<_>>()
+            .join(", "),
+    ]
+    .into_iter()
+    .map(|s| Cell::new(format!("{}{}", vert_pad, s)))
+    .collect::<Row>()
+    .height(ROW_HEIGHT)
 }
 
 #[cfg(test)]
