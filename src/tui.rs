@@ -5,10 +5,10 @@ use ratatui::{
     buffer::Buffer,
     crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     layout::{Constraint, Flex, Layout, Rect},
-    style::Stylize,
+    style::{Style, Stylize},
     symbols::border,
     text::Line,
-    widgets::{Block, Cell, Clear, Paragraph, Row, Table, Widget},
+    widgets::{Block, Cell, Clear, Paragraph, Row, StatefulWidget, Table, TableState, Widget},
 };
 use tui_input::Input;
 use tui_input::backend::crossterm::EventHandler;
@@ -23,8 +23,7 @@ const CHROME_HEIGHT: u16 = 3;
 pub struct Tui {
     is_running: bool,
     library: Library,
-    cursor: usize,
-    scroll_offset: usize,
+    table_state: TableState,
     num_visible: usize,
     filtered: Vec<Uuid>,
     popup: Option<Popup>,
@@ -67,6 +66,7 @@ impl Tui {
 
         Ok(Self {
             library: my_lib,
+            table_state: TableState::default().with_selected(0),
             num_visible: num_visible.into(),
             filtered: all_ids,
             ..Default::default()
@@ -85,8 +85,8 @@ impl Tui {
     }
 
     // TODO: Refactor to call draw_popup and draw_cursor
-    fn draw(&self, frame: &mut Frame) {
-        frame.render_widget(self, frame.area());
+    fn draw(&mut self, frame: &mut Frame) {
+        frame.render_widget(&mut *self, frame.area());
 
         if self.popup.is_some() {
             let popup_area = Popup::popup_area(frame.area(), 60, 20);
@@ -199,55 +199,58 @@ impl Tui {
     }
 
     fn move_cursor_up(&mut self) {
-        let is_first_visible = self.cursor == self.scroll_offset;
-        let is_first_overall = self.cursor == 0;
-        if is_first_visible && !is_first_overall {
-            self.scroll_offset -= 1;
+        if let Some(i) = self.table_state.selected() {
+            self.table_state.select(Some(i.saturating_sub(1)))
+        } else {
+            self.table_state.select(Some(0))
         }
-        self.cursor = self.cursor.saturating_sub(1);
     }
 
     fn move_cursor_down(&mut self) {
-        let is_last_visible =
-            self.cursor == (self.scroll_offset + self.num_visible).saturating_sub(1);
-        let final_item = self.filtered.len().saturating_sub(1);
-        let is_last_overall = self.cursor == final_item;
-        if is_last_visible && !is_last_overall {
-            self.scroll_offset += 1;
+        if let Some(i) = self.table_state.selected() {
+            self.table_state.select(Some(i.saturating_add(1)))
+        } else {
+            self.table_state.select(Some(0))
         }
-        self.cursor = (self.cursor + 1).min(final_item);
     }
 
     fn move_page_up(&mut self) {
-        self.scroll_offset = self.scroll_offset.saturating_sub(self.num_visible);
+        *self.table_state.offset_mut() = self.table_state.offset().saturating_sub(self.num_visible);
 
-        self.cursor = self.cursor.saturating_sub(self.num_visible);
+        if let Some(i) = self.table_state.selected() {
+            self.table_state
+                .select(Some(i.saturating_sub(self.num_visible)))
+        } else {
+            self.table_state.select(Some(0))
+        }
     }
 
     fn move_page_down(&mut self) {
-        let top_next_page = self.scroll_offset + self.num_visible;
+        let top_next_page = self.table_state.offset() + self.num_visible;
         let top_last_full_page = self.filtered.len().saturating_sub(self.num_visible);
-        self.scroll_offset = top_next_page.min(top_last_full_page);
+        *self.table_state.offset_mut() = top_next_page.min(top_last_full_page);
 
-        let next_page_cursor = self.cursor + self.num_visible;
-        let final_item = self.filtered.len().saturating_sub(1);
-        self.cursor = next_page_cursor.min(final_item);
+        if let Some(i) = self.table_state.selected() {
+            let one_page_down = i.saturating_add(self.num_visible);
+            let final_item = self.filtered.len().saturating_sub(1);
+            self.table_state.select(Some(one_page_down.min(final_item)))
+        } else {
+            self.table_state.select(Some(0))
+        }
     }
 
     fn apply_filter(&mut self, filter: LibrarySearch) {
         self.filtered = self.library.search(&filter).map(|b| b.id).collect();
-        self.cursor = 0;
-        self.scroll_offset = 0;
+        self.table_state.select(Some(0));
     }
 
     fn clear_filters(&mut self) {
         self.filtered = self.library.all().map(|b| b.id).collect();
-        self.cursor = 0;
-        self.scroll_offset = 0;
+        self.table_state.select(Some(0));
     }
 }
 
-impl Widget for &Tui {
+impl Widget for &mut Tui {
     fn render(self, area: Rect, buf: &mut Buffer)
     where
         Self: Sized,
@@ -281,26 +284,16 @@ impl Widget for &Tui {
             .library
             .all()
             .filter(|b| filtered_set.contains(&b.id))
-            .enumerate()
-            .skip(self.scroll_offset)
-            .take(usize::from(
-                area.height.saturating_sub(CHROME_HEIGHT) / ROW_HEIGHT,
-            ))
-            .map(|(i, b)| (i, book_to_row(b)))
-            .map(|(i, r)| {
-                if i == self.cursor {
-                    r.green().on_dark_gray().bold()
-                } else {
-                    r
-                }
-            })
+            .map(|b| book_to_row(b))
             .collect::<Table>()
             .widths(Constraint::from_percentages([40, 20, 10, 30]))
             .column_spacing(2)
             .flex(Flex::SpaceEvenly)
-            .header(header);
+            .row_highlight_style(Style::new().green().on_dark_gray().bold())
+            .header(header)
+            .block(block);
 
-        table.block(block).render(area, buf);
+        StatefulWidget::render(table, area, buf, &mut self.table_state);
     }
 }
 
