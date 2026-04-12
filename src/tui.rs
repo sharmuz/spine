@@ -8,7 +8,7 @@ use ratatui::{
     style::{Style, Stylize},
     symbols::border,
     text::Line,
-    widgets::{Block, Cell, Clear, Paragraph, Row, StatefulWidget, Table, TableState, Widget},
+    widgets::{Block, Cell, Clear, Paragraph, Row, Table, TableState, Widget},
 };
 use tui_input::Input;
 use tui_input::backend::crossterm::EventHandler;
@@ -76,7 +76,7 @@ impl Tui {
     pub fn run(mut self, mut terminal: DefaultTerminal) -> io::Result<()> {
         self.is_running = true;
         while self.is_running {
-            terminal.draw(|frame| self.draw(frame))?;
+            terminal.draw(|frame| self.render(frame))?;
             if let Some(message) = self.handle_events()? {
                 self.update(message);
             }
@@ -84,22 +84,60 @@ impl Tui {
         Ok(())
     }
 
-    // TODO: Refactor to call draw_popup and draw_cursor
-    fn draw(&mut self, frame: &mut Frame) {
-        frame.render_widget(&mut *self, frame.area());
+    fn render(&mut self, frame: &mut Frame) {
+        self.render_table(frame);
 
-        if self.popup.is_some() {
+        if let Some(popup) = &self.popup {
             let popup_area = Popup::popup_area(frame.area(), 60, 20);
-            frame.render_widget(self.popup.as_ref(), popup_area);
-        };
+            frame.render_widget(popup, popup_area);
 
-        if self.input_mode == InputMode::Editing {
-            if let Some(popup) = &self.popup {
-                let popup_area = Popup::popup_area(frame.area(), 60, 20);
+            if self.input_mode == InputMode::Editing {
                 let x_offset = (popup.input.visual_cursor() + 7) as u16;
                 frame.set_cursor_position((popup_area.x + x_offset, popup_area.y + 1));
             }
         }
+    }
+
+    fn render_table(&mut self, frame: &mut Frame) {
+        let title = Line::from(" Spine - Your Books ".bold());
+        let instructions = Line::from(vec![
+            " Move up ".into(),
+            "<Up/PgUp>".blue().bold(),
+            " Move down ".into(),
+            "<Down/PgDn>".blue().bold(),
+            " Filters ".into(),
+            "[W]ant/[R]ead/Readin[G] ".blue().bold(),
+            " Quit ".into(),
+            "<Ctrl+c> ".blue().bold(),
+        ]);
+        let block = Block::bordered()
+            .title(title.centered())
+            .title_bottom(instructions.centered())
+            .border_set(border::THICK);
+
+        let filtered_set: HashSet<Uuid> = self.filtered.iter().copied().collect();
+        let header = Row::new(vec![
+            Cell::new("Title"),
+            Cell::new("Author"),
+            Cell::new("Status"),
+            Cell::new("Tags"),
+        ])
+        .black()
+        .on_white();
+        let table = self
+            .library
+            .all()
+            .filter(|b| filtered_set.contains(&b.id))
+            .map(|b| book_to_row(b))
+            .collect::<Table>()
+            .widths(Constraint::from_percentages([40, 20, 10, 30]))
+            .column_spacing(2)
+            .flex(Flex::SpaceEvenly)
+            .row_highlight_style(Style::new().green().on_dark_gray().bold())
+            .header(header)
+            .block(block);
+
+        frame.render_stateful_widget(table, frame.area(), &mut self.table_state);
     }
 
     fn handle_events(&mut self) -> io::Result<Option<Message>> {
@@ -247,53 +285,6 @@ impl Tui {
     fn clear_filters(&mut self) {
         self.filtered = self.library.all().map(|b| b.id).collect();
         self.table_state.select(Some(0));
-    }
-}
-
-impl Widget for &mut Tui {
-    fn render(self, area: Rect, buf: &mut Buffer)
-    where
-        Self: Sized,
-    {
-        let title = Line::from(" Spine - Your Books ".bold());
-        let instructions = Line::from(vec![
-            " Move up ".into(),
-            "<Up/PgUp>".blue().bold(),
-            " Move down ".into(),
-            "<Down/PgDn>".blue().bold(),
-            " Filters ".into(),
-            "[W]ant/[R]ead/Readin[G] ".blue().bold(),
-            " Quit ".into(),
-            "<Ctrl+c> ".blue().bold(),
-        ]);
-        let block = Block::bordered()
-            .title(title.centered())
-            .title_bottom(instructions.centered())
-            .border_set(border::THICK);
-
-        let filtered_set: HashSet<Uuid> = self.filtered.iter().copied().collect();
-        let header = Row::new(vec![
-            Cell::new("Title"),
-            Cell::new("Author"),
-            Cell::new("Status"),
-            Cell::new("Tags"),
-        ])
-        .black()
-        .on_white();
-        let table = self
-            .library
-            .all()
-            .filter(|b| filtered_set.contains(&b.id))
-            .map(|b| book_to_row(b))
-            .collect::<Table>()
-            .widths(Constraint::from_percentages([40, 20, 10, 30]))
-            .column_spacing(2)
-            .flex(Flex::SpaceEvenly)
-            .row_highlight_style(Style::new().green().on_dark_gray().bold())
-            .header(header)
-            .block(block);
-
-        StatefulWidget::render(table, area, buf, &mut self.table_state);
     }
 }
 
