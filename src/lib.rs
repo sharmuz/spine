@@ -10,9 +10,7 @@ use uuid::Uuid;
 
 pub use crate::book::{Author, Book, Isbn, Status};
 
-pub mod book;
-pub mod cli;
-pub mod tui;
+mod book;
 
 /// A representation of a user's personal library.
 #[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]

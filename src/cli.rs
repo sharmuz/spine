@@ -10,7 +10,7 @@ use anyhow::bail;
 use clap::{Args, CommandFactory, Parser, Subcommand};
 use uuid::Uuid;
 
-use crate::{Author, Book, Isbn, Library, LibrarySearch, Status};
+use spine::{Author, Book, Isbn, Library, LibrarySearch, Status};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]

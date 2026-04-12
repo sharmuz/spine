@@ -12,7 +12,7 @@ use ratatui::{
 use tui_input::backend::crossterm::EventHandler;
 use uuid::Uuid;
 
-use crate::{Book, Library, LibrarySearch, Status};
+use spine::{Book, Library, LibrarySearch, Status};
 
 use popup::Popup;
 
