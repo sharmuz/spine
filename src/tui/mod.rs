@@ -2,19 +2,21 @@ use std::{collections::HashSet, io, path::Path};
 
 use ratatui::{
     DefaultTerminal, Frame,
-    buffer::Buffer,
     crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
-    layout::{Constraint, Flex, Layout, Rect},
+    layout::{Constraint, Flex, Rect},
     style::{Style, Stylize},
     symbols::border,
     text::Line,
-    widgets::{Block, Cell, Clear, Paragraph, Row, Table, TableState, Widget},
+    widgets::{Block, Cell, Row, Table, TableState},
 };
-use tui_input::Input;
 use tui_input::backend::crossterm::EventHandler;
 use uuid::Uuid;
 
 use crate::{Book, Library, LibrarySearch, Status};
+
+use popup::Popup;
+
+mod popup;
 
 const ROW_HEIGHT: u16 = 3;
 const CHROME_HEIGHT: u16 = 3;
@@ -88,7 +90,7 @@ impl Tui {
         self.render_table(frame);
 
         if let Some(popup) = &self.popup {
-            let popup_area = Popup::popup_area(frame.area(), 60, 20);
+            let popup_area = Popup::area(frame.area(), 60, 20);
             frame.render_widget(popup, popup_area);
 
             if self.input_mode == InputMode::Editing {
@@ -285,47 +287,6 @@ impl Tui {
     fn clear_filters(&mut self) {
         self.filtered = self.library.all().map(|b| b.id).collect();
         self.table_state.select(Some(0));
-    }
-}
-
-#[derive(Debug, Default)]
-struct Popup {
-    title: String,
-    content: String,
-    input: Input,
-}
-
-impl Popup {
-    fn popup_area(area: Rect, percent_x: u16, percent_y: u16) -> Rect {
-        let vertical = Layout::vertical([Constraint::Percentage(percent_y)]).flex(Flex::Center);
-        let horizontal = Layout::horizontal([Constraint::Percentage(percent_x)]).flex(Flex::Center);
-        let [area] = vertical.areas(area);
-        let [area] = horizontal.areas(area);
-        area
-    }
-}
-
-impl Widget for &Popup {
-    fn render(self, area: Rect, buf: &mut Buffer)
-    where
-        Self: Sized,
-    {
-        Clear.render(area, buf);
-        let instructions = Line::from(vec![
-            " Cancel ".into(),
-            "<Esc> ".blue().bold(),
-            " Apply ".into(),
-            "<Enter> ".blue().bold(),
-        ]);
-        let block = Block::bordered()
-            .title(Line::from(self.title.clone()).centered())
-            .title_bottom(Line::from(instructions).centered());
-        Paragraph::new(Line::from(vec![
-            self.content.clone().into(),
-            self.input.value().into(),
-        ]))
-        .block(block)
-        .render(area, buf);
     }
 }
 
