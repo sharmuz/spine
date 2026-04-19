@@ -1,17 +1,15 @@
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Flex, Layout, Rect},
-    style::{Stylize},
+    style::Stylize,
     text::Line,
     widgets::{Block, Clear, Paragraph, Widget},
 };
 use tui_input::Input;
 
-#[derive(Debug, Default)]
-pub(super) struct Popup {
-    pub(super) title: String,
-    pub(super) content: String,
-    pub(super) input: Input,
+#[derive(Debug)]
+pub(super) enum Popup {
+    Filter(FilterPopup),
 }
 
 impl Popup {
@@ -22,6 +20,12 @@ impl Popup {
         let [area] = horizontal.areas(area);
         area
     }
+
+    pub(super) const fn is_editable(&self) -> bool {
+        match self {
+            Self::Filter(_) => true,
+        }
+    }
 }
 
 impl Widget for &Popup {
@@ -29,6 +33,21 @@ impl Widget for &Popup {
     where
         Self: Sized,
     {
+        match self {
+            Popup::Filter(p) => p.render(area, buf),
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+pub(super) struct FilterPopup {
+    pub(super) title: String,
+    pub(super) content: String,
+    pub(super) input: Input,
+}
+
+impl FilterPopup {
+    pub(super) fn render(&self, area: Rect, buf: &mut Buffer) {
         Clear.render(area, buf);
         let instructions = Line::from(vec![
             " Cancel ".into(),

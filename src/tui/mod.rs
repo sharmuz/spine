@@ -14,7 +14,7 @@ use uuid::Uuid;
 
 use spine::{Book, Library, LibrarySearch, Status};
 
-use popup::Popup;
+use popup::{FilterPopup, Popup};
 
 mod popup;
 
@@ -49,7 +49,7 @@ enum Message {
     SelectItem,
     ApplyFilter(LibrarySearch),
     ClearFilters,
-    ShowPopup,
+    ShowPopup(Popup),
     ClosePopup,
     HandleInput(Event),
 }
@@ -94,8 +94,12 @@ impl Tui {
             frame.render_widget(popup, popup_area);
 
             if self.input_mode == InputMode::Editing {
-                let x_offset = (popup.input.visual_cursor() + 7) as u16;
-                frame.set_cursor_position((popup_area.x + x_offset, popup_area.y + 1));
+                match popup {
+                    Popup::Filter(p) => {
+                        let x_offset = (p.input.visual_cursor() + 7) as u16;
+                        frame.set_cursor_position((popup_area.x + x_offset, popup_area.y + 1));
+                    }
+                }
             }
         }
     }
@@ -178,13 +182,19 @@ impl Tui {
                         ..Default::default()
                     })),
                     (_, KeyCode::Char('c')) => Some(Message::ClearFilters),
-                    (_, KeyCode::Char('f')) => Some(Message::ShowPopup),
+                    (_, KeyCode::Char('f')) => {
+                        Some(Message::ShowPopup(Popup::Filter(FilterPopup {
+                            title: " Filter by... ".into(),
+                            content: " Tag: ".into(),
+                            ..Default::default()
+                        })))
+                    }
                     _ => None,
                 },
                 InputMode::Editing => match &mut self.popup {
-                    Some(popup) => match (key.modifiers, key.code) {
+                    Some(Popup::Filter(p)) => match (key.modifiers, key.code) {
                         (_, KeyCode::Enter) => Some(Message::ApplyFilter(LibrarySearch {
-                            tags: Some(vec![popup.input.value_and_reset()]),
+                            tags: Some(vec![p.input.value_and_reset()]),
                             ..Default::default()
                         })),
                         (_, KeyCode::Esc) => Some(Message::ClosePopup),
@@ -209,7 +219,7 @@ impl Tui {
             Message::PageDown => self.move_page_down(),
             Message::SelectItem => {
                 if self.popup.is_some() {
-                    self.popup = None
+                    self.popup = None;
                 }
             }
             Message::ApplyFilter(filter) => {
@@ -218,21 +228,19 @@ impl Tui {
             }
             Message::ClearFilters => self.clear_filters(),
             // TODO: Create Popup::new or other method to create filter popup instance?
-            Message::ShowPopup => {
-                self.popup = Some(Popup {
-                    title: " Filter by... ".into(),
-                    content: " Tag: ".into(),
-                    ..Default::default()
-                });
-                self.input_mode = InputMode::Editing;
+            Message::ShowPopup(popup) => {
+                if popup.is_editable() {
+                    self.input_mode = InputMode::Editing;
+                };
+                self.popup = Some(popup);
             }
             Message::ClosePopup => {
                 self.popup = None;
                 self.input_mode = InputMode::Normal;
             }
             Message::HandleInput(event) => {
-                if let Some(popup) = &mut self.popup {
-                    popup.input.handle_event(&event);
+                if let Some(Popup::Filter(p)) = &mut self.popup {
+                    p.input.handle_event(&event);
                 }
             }
         }
