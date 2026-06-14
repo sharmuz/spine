@@ -34,7 +34,6 @@ fn spine_add_adds_new_book_to_existing_library() {
     #[rustfmt::skip]
     let assert = cmd
         .args([
-            "--cli",
             "add",
             "--reading",
             "--tag", "japanese",
