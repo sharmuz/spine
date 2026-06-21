@@ -53,7 +53,7 @@ impl FromStr for Author {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut names = s.split_whitespace();
-        let first = names.next().ok_or(io::Error::new(
+        let first = names.next().ok_or_else(|| io::Error::new(
             io::ErrorKind::InvalidInput,
             "Invalid author name provided.",
         ))?;
@@ -76,10 +76,10 @@ pub enum Isbn {
 }
 
 impl Isbn {
+    #[must_use]
     pub fn as_str(&self) -> &str {
         match self {
-            Isbn::Isbn10(s) => s,
-            Isbn::Isbn13(s) => s,
+            Self::Isbn10(s) | Self::Isbn13(s) => s
         }
     }
 }
@@ -88,11 +88,11 @@ impl FromStr for Isbn {
     type Err = io::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let norm = s.replace(" ", "").replace("-", "");
+        let norm = s.replace([' ', '-'], "");
         let mut rev = norm.chars().rev();
         let last = rev.next();
         for c in rev {
-            if !c.is_digit(10) {
+            if !c.is_ascii_digit() {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
                     "Invalid ISBN: must contain only digits separated by hyphens or spaces.",
@@ -100,15 +100,15 @@ impl FromStr for Isbn {
             }
         }
         if norm.len() == 10
-            && (last.is_some_and(|c| c.is_digit(10) || c.eq_ignore_ascii_case(&'x')))
+            && (last.is_some_and(|c| c.is_ascii_digit() || c.eq_ignore_ascii_case(&'x')))
         {
-            return Ok(Isbn::Isbn10(norm));
+            return Ok(Self::Isbn10(norm));
         }
         if norm.len() == 13
             && (&norm[..3] == "978" || &norm[..3] == "979")
-            && last.is_some_and(|c| c.is_digit(10))
+            && last.is_some_and(|c| c.is_ascii_digit())
         {
-            return Ok(Isbn::Isbn13(norm));
+            return Ok(Self::Isbn13(norm));
         }
         Err(io::Error::new(
             io::ErrorKind::InvalidInput,
@@ -131,9 +131,9 @@ impl FromStr for Status {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.trim().to_lowercase().as_str() {
-            "want" => Ok(Status::Want),
-            "reading" => Ok(Status::Reading),
-            "read" => Ok(Status::Read),
+            "want" => Ok(Self::Want),
+            "reading" => Ok(Self::Reading),
+            "read" => Ok(Self::Read),
             _ => Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "Invalid status: expected 'want', 'reading', or 'read'",

@@ -234,7 +234,7 @@ fn exit_with_error(kind: clap::error::ErrorKind, msg: &str) -> ! {
     cmd.error(kind, msg).exit();
 }
 
-fn get_search_hits<'a>(lib: &'a Library, search: SearchArgs) -> Result<Vec<&'a Book>, io::Error> {
+fn get_search_hits(lib: &Library, search: SearchArgs) -> Result<Vec<&Book>, io::Error> {
     Ok(lib
         .search(&LibrarySearch {
             title: search.title,
@@ -242,7 +242,6 @@ fn get_search_hits<'a>(lib: &'a Library, search: SearchArgs) -> Result<Vec<&'a B
             isbn: search.isbn,
             status: search.status.as_deref().map(Status::from_str).transpose()?,
             tags: search.tags,
-            ..Default::default()
         })
         .collect::<Vec<&Book>>())
 }
@@ -255,7 +254,7 @@ fn select_books(hits: Vec<&Book>) -> Result<Vec<Uuid>, io::Error> {
         let found_msg = hits
             .iter()
             .enumerate()
-            .map(|(i, b)| format!("{}. {}", (i + 1), b.to_string()))
+            .map(|(i, b)| format!("{}. {}", (i + 1), b))
             .collect::<Vec<String>>()
             .join("\n");
         println!(

@@ -18,7 +18,6 @@ fn spine_add_adds_new_book_to_existing_library() {
         isbn: Some(Isbn::from_str("9781847494818").unwrap()),
         status: Status::Read,
         tags: HashSet::from(["classic".into(), "russian".into()]),
-        ..Default::default()
     });
     let mut book2 = Book {
         id: uuid!("b1b2b3b4-c1c2-d1d2-e1e2-e3e4e5e6e7e8"),
@@ -50,7 +49,7 @@ fn spine_add_adds_new_book_to_existing_library() {
         .append_context("main", "wrong output");
 
     let actual = Library::open(out_path).unwrap();
-    book2.id = actual.all().last().expect("book in library").id.clone();
+    book2.id = actual.all().last().expect("book in library").id;
     expected.add(book2);
     assert_eq!(actual, expected);
 

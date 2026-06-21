@@ -57,7 +57,7 @@ impl FilterPopup {
         ]);
         let block = Block::bordered()
             .title(Line::from(self.title.clone()).centered())
-            .title_bottom(Line::from(instructions).centered());
+            .title_bottom(instructions.centered());
         Paragraph::new(Line::from(vec![
             self.content.clone().into(),
             self.input.value().into(),

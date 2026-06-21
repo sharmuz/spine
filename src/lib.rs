@@ -60,7 +60,7 @@ impl Library {
     }
 
     /// Removes one or more tags from a book.
-    pub fn untag(&mut self, id: Uuid, tags: &Vec<String>) -> Result<(), io::Error> {
+    pub fn untag(&mut self, id: Uuid, tags: &[String]) -> Result<(), io::Error> {
         let tag_idx = self.get_index(id)?;
         self.books[tag_idx].tags.retain(|t| !tags.contains(t));
 
@@ -77,7 +77,6 @@ impl Library {
     /// Searches the library for books matching the given criteria.
     ///
     /// Returns iterator over matches or all books if no criteria are set on `search`.
-    #[must_use]
     pub fn search(&self, search: &LibrarySearch) -> impl Iterator<Item = &Book> {
         self.books.iter().filter(|&b| {
             search.title.as_ref().is_none_or(|t| b.title.contains(t))
@@ -157,7 +156,6 @@ mod tests {
         isbn: Some(Isbn::from_str("9780199536467").unwrap()),
         status: Status::Read,
         tags: HashSet::from(["1800s".into(), "classic".into()]),
-        ..Default::default()
     });
     static EIGHTY_DAYS: LazyLock<Book> = LazyLock::new(|| Book {
         id: uuid!("c1c2c3c4-d1d2-e1e2-f1f2-f3f4f5f6f7f8"),
@@ -275,7 +273,7 @@ mod tests {
         };
 
         my_lib
-            .untag(KIM.id, &vec!["1800s".into(), "illustrated".into()])
+            .untag(KIM.id, &["1800s".into(), "illustrated".into()])
             .unwrap();
 
         assert_eq!(my_lib.all().last().unwrap(), &expected);

@@ -55,7 +55,6 @@ enum Message {
 }
 
 impl Tui {
-    #[must_use]
     pub fn new(term_size: Rect) -> anyhow::Result<Self> {
         let path = Path::new("spine.json");
         let my_lib = if path.exists() {
