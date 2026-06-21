@@ -158,7 +158,9 @@ where
                 }
 
                 println!("Matched {} book(s) in your library:\n", hits.len());
-                hits.iter().for_each(|b| println!("{b}"));
+                for b in &hits {
+                    println!("{b}");
+                }
             } else {
                 println!("All books in your library:\n");
                 my_lib.all().for_each(|b| println!("{b}"));
@@ -186,7 +188,7 @@ where
             }
 
             let hits = get_search_hits(&my_lib, search_args)?;
-            let rm_ids = select_books(hits)?;
+            let rm_ids = select_books(&hits)?;
             for id in &rm_ids {
                 my_lib.remove(*id)?;
             }
@@ -213,7 +215,7 @@ where
 
                 let new_status = status.to_status();
                 let hits = get_search_hits(&my_lib, search)?;
-                let update_ids = select_books(hits)?;
+                let update_ids = select_books(&hits)?;
                 for id in &update_ids {
                     my_lib.update_status(*id, new_status)?;
                 }
@@ -246,7 +248,7 @@ fn get_search_hits(lib: &Library, search: SearchArgs) -> Result<Vec<&Book>, io::
         .collect::<Vec<&Book>>())
 }
 
-fn select_books(hits: Vec<&Book>) -> Result<Vec<Uuid>, io::Error> {
+fn select_books(hits: &[&Book]) -> Result<Vec<Uuid>, io::Error> {
     if hits.is_empty() {
         return Err(io::Error::other("No books found matching given criteria."));
     }
@@ -265,7 +267,7 @@ fn select_books(hits: Vec<&Book>) -> Result<Vec<Uuid>, io::Error> {
         println!("\nWhich books? (if multiple, separate numbers by commas):");
 
         loop {
-            match get_user_selections(&hits) {
+            match get_user_selections(hits) {
                 Ok(uuids) => return Ok(uuids),
                 Err(e) => println!("{e}"),
             }
@@ -283,7 +285,7 @@ fn get_user_selections(hits: &[&Book]) -> Result<Vec<Uuid>, io::Error> {
         handle.read_line(&mut buffer)?;
     }
     let choices = buffer
-        .split(",")
+        .split(',')
         .map(|s| s.trim().parse::<usize>())
         .collect::<Vec<Result<usize, ParseIntError>>>();
     for ch in &choices {

@@ -33,6 +33,10 @@ impl Library {
     }
 
     /// Removes a book from the library.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if no `Book` found with given `Uuid`.
     pub fn remove(&mut self, id: Uuid) -> Result<(), io::Error> {
         let rm_idx = self.get_index(id)?;
         self.books.remove(rm_idx);
@@ -41,6 +45,10 @@ impl Library {
     }
 
     /// Updates status of a book in the library.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if no `Book` found with given `Uuid`.
     pub fn update_status(&mut self, id: Uuid, new_status: Status) -> Result<(), io::Error> {
         let update_idx = self.get_index(id)?;
         self.books[update_idx].status = new_status;
@@ -49,6 +57,10 @@ impl Library {
     }
 
     /// Tags a book with one or more tags.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if no `Book` found with given `Uuid`.
     pub fn tag<I>(&mut self, id: Uuid, tags: I) -> Result<(), io::Error>
     where
         I: IntoIterator<Item = String>,
@@ -60,6 +72,10 @@ impl Library {
     }
 
     /// Removes one or more tags from a book.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if no `Book` found with given `Uuid`.
     pub fn untag(&mut self, id: Uuid, tags: &[String]) -> Result<(), io::Error> {
         let tag_idx = self.get_index(id)?;
         self.books[tag_idx].tags.retain(|t| !tags.contains(t));
@@ -102,6 +118,10 @@ impl Library {
     }
 
     /// Saves the library to a file.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if serialization fails for `Libary`.
     pub fn save(&self, path: impl AsRef<Path>) -> anyhow::Result<()> {
         let file = OpenOptions::new()
             .create(true)
@@ -115,6 +135,10 @@ impl Library {
     }
 
     /// Opens the library from a file.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if no input structure does not match structure expected by `Library`.
     pub fn open(path: impl AsRef<Path>) -> anyhow::Result<Self> {
         let file = File::open(path)?;
         let buf = BufReader::new(file);

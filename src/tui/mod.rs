@@ -95,6 +95,7 @@ impl Tui {
             if self.input_mode == InputMode::Editing {
                 match popup {
                     Popup::Filter(p) => {
+                        #[allow(clippy::cast_possible_truncation)]
                         let x_offset = (p.input.visual_cursor() + 7) as u16;
                         frame.set_cursor_position((popup_area.x + x_offset, popup_area.y + 1));
                     }
@@ -222,7 +223,7 @@ impl Tui {
                 }
             }
             Message::ApplyFilter(filter) => {
-                self.apply_filter(filter);
+                self.apply_filter(&filter);
                 self.update(Message::ClosePopup);
             }
             Message::ClearFilters => self.clear_filters(),
@@ -230,7 +231,7 @@ impl Tui {
             Message::ShowPopup(popup) => {
                 if popup.is_editable() {
                     self.input_mode = InputMode::Editing;
-                };
+                }
                 self.popup = Some(popup);
             }
             Message::ClosePopup => {
@@ -247,17 +248,17 @@ impl Tui {
 
     const fn move_cursor_up(&mut self) {
         if let Some(i) = self.table_state.selected() {
-            self.table_state.select(Some(i.saturating_sub(1)))
+            self.table_state.select(Some(i.saturating_sub(1)));
         } else {
-            self.table_state.select(Some(0))
+            self.table_state.select(Some(0));
         }
     }
 
     const fn move_cursor_down(&mut self) {
         if let Some(i) = self.table_state.selected() {
-            self.table_state.select(Some(i.saturating_add(1)))
+            self.table_state.select(Some(i.saturating_add(1)));
         } else {
-            self.table_state.select(Some(0))
+            self.table_state.select(Some(0));
         }
     }
 
@@ -266,9 +267,9 @@ impl Tui {
 
         if let Some(i) = self.table_state.selected() {
             self.table_state
-                .select(Some(i.saturating_sub(self.num_visible)))
+                .select(Some(i.saturating_sub(self.num_visible)));
         } else {
-            self.table_state.select(Some(0))
+            self.table_state.select(Some(0));
         }
     }
 
@@ -280,14 +281,14 @@ impl Tui {
         if let Some(i) = self.table_state.selected() {
             let one_page_down = i.saturating_add(self.num_visible);
             let final_item = self.filtered.len().saturating_sub(1);
-            self.table_state.select(Some(one_page_down.min(final_item)))
+            self.table_state.select(Some(one_page_down.min(final_item)));
         } else {
-            self.table_state.select(Some(0))
+            self.table_state.select(Some(0));
         }
     }
 
-    fn apply_filter(&mut self, filter: LibrarySearch) {
-        self.filtered = self.library.search(&filter).map(|b| b.id).collect();
+    fn apply_filter(&mut self, filter: &LibrarySearch) {
+        self.filtered = self.library.search(filter).map(|b| b.id).collect();
         self.table_state.select(Some(0));
     }
 
@@ -300,17 +301,17 @@ impl Tui {
 fn book_to_row(book: &Book) -> Row<'_> {
     let vert_pad = '\n'.to_string().repeat(usize::from(ROW_HEIGHT - 1) / 2);
     vec![
-        book.title.to_string(),
-        book.author.surname.to_string(),
+        book.title.clone(),
+        book.author.surname.clone(),
         format!("{:?}", book.status),
         book.tags
             .iter()
-            .map(|t| t.to_string())
+            .cloned()
             .collect::<Vec<_>>()
             .join(", "),
     ]
     .into_iter()
-    .map(|s| Cell::new(format!("{}{}", vert_pad, s)))
+    .map(|s| Cell::new(format!("{vert_pad}{s}")))
     .collect::<Row>()
     .height(ROW_HEIGHT)
 }
