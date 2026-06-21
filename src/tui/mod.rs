@@ -198,7 +198,7 @@ impl Tui {
                         })),
                         (_, KeyCode::Esc) => Some(Message::ClosePopup),
                         (KeyModifiers::CONTROL, KeyCode::Char('c')) => Some(Message::Quit),
-                        _ => Some(Message::HandleInput(event.clone())),
+                        _ => Some(Message::HandleInput(event)),
                     },
                     None => None,
                 },
@@ -245,7 +245,7 @@ impl Tui {
         }
     }
 
-    fn move_cursor_up(&mut self) {
+    const fn move_cursor_up(&mut self) {
         if let Some(i) = self.table_state.selected() {
             self.table_state.select(Some(i.saturating_sub(1)))
         } else {
@@ -253,7 +253,7 @@ impl Tui {
         }
     }
 
-    fn move_cursor_down(&mut self) {
+    const fn move_cursor_down(&mut self) {
         if let Some(i) = self.table_state.selected() {
             self.table_state.select(Some(i.saturating_add(1)))
         } else {
@@ -261,7 +261,7 @@ impl Tui {
         }
     }
 
-    fn move_page_up(&mut self) {
+    const fn move_page_up(&mut self) {
         *self.table_state.offset_mut() = self.table_state.offset().saturating_sub(self.num_visible);
 
         if let Some(i) = self.table_state.selected() {

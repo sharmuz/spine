@@ -80,7 +80,7 @@ struct SearchArgs {
 }
 
 impl SearchArgs {
-    fn is_any_set(&self) -> bool {
+    const fn is_any_set(&self) -> bool {
         self.title.is_some()
             || self.author.is_some()
             || self.isbn.is_some()
@@ -115,7 +115,7 @@ struct StatusFlag {
 }
 
 impl StatusFlag {
-    fn to_status(&self) -> Status {
+    const fn to_status(&self) -> Status {
         match (self.reading, self.read) {
             (true, _) => Status::Reading,
             (_, true) => Status::Read,
@@ -123,7 +123,7 @@ impl StatusFlag {
         }
     }
 
-    fn is_set(&self) -> bool {
+    const fn is_set(&self) -> bool {
         self.want || self.reading || self.read
     }
 }

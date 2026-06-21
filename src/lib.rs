@@ -20,7 +20,7 @@ pub struct Library {
 
 impl Library {
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { books: Vec::new() }
     }
 
@@ -387,9 +387,9 @@ mod tests {
             ..Default::default()
         };
 
-        let search_hits: Vec<_> = my_lib.search(&my_search).collect();
+        let mut search_hits = my_lib.search(&my_search);
 
-        assert!(search_hits.is_empty());
+        assert!(search_hits.next().is_none());
     }
 
     #[test]
@@ -400,20 +400,16 @@ mod tests {
             ..Default::default()
         };
 
-        let search_hits: Vec<_> = my_lib.search(&my_search).collect();
+        let mut search_hits = my_lib.search(&my_search);
 
-        assert!(search_hits.is_empty());
+        assert!(search_hits.next().is_none());
     }
 
     #[test]
     fn search_finds_all_by_nothing() {
         let my_lib = library_with_two_books();
 
-        let search_hits: Vec<_> = my_lib
-            .search(&LibrarySearch {
-                ..Default::default()
-            })
-            .collect();
+        let search_hits: Vec<_> = my_lib.search(&LibrarySearch::default()).collect();
 
         assert_eq!(search_hits, my_lib.all().collect::<Vec<_>>());
     }
