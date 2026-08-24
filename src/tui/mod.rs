@@ -16,6 +16,8 @@ use spine::{Book, Library, LibrarySearch, Status};
 
 use popup::{FilterPopup, Popup};
 
+use crate::tui::popup::ShortcutsPopup;
+
 mod popup;
 
 const ROW_HEIGHT: u16 = 3;
@@ -89,16 +91,21 @@ impl Tui {
         self.render_table(frame);
 
         if let Some(popup) = &self.popup {
-            let popup_area = Popup::area(frame.area(), 60, 20);
+            let popup_area = match popup {
+                Popup::Filter(_) => Popup::area(frame.area(), 60, 20),
+                Popup::Shortcuts(_) => Popup::area(frame.area(), 40, 35),
+            };
             frame.render_widget(popup, popup_area);
 
             if self.input_mode == InputMode::Editing {
+                #[allow(clippy::single_match)]
                 match popup {
                     Popup::Filter(p) => {
                         #[allow(clippy::cast_possible_truncation)]
                         let x_offset = (p.input.visual_cursor() + 7) as u16;
                         frame.set_cursor_position((popup_area.x + x_offset, popup_area.y + 1));
                     }
+                    _ => (),
                 }
             }
         }
@@ -111,8 +118,8 @@ impl Tui {
             "<Up/PgUp>".blue().bold(),
             " Move down ".into(),
             "<Down/PgDn>".blue().bold(),
-            " Filters ".into(),
-            "[W]ant/[R]ead/Readin[G] ".blue().bold(),
+            " Shortcuts ".into(),
+            "<?> ".blue().bold(),
             " Quit ".into(),
             "<Ctrl+c> ".blue().bold(),
         ]);
@@ -189,6 +196,12 @@ impl Tui {
                             ..Default::default()
                         })))
                     }
+                    (_, KeyCode::Char('?')) => {
+                        Some(Message::ShowPopup(Popup::Shortcuts(ShortcutsPopup {
+                            title: " Keyboard Shortcuts ".into(),
+                        })))
+                    }
+                    (_, KeyCode::Esc) => Some(Message::ClosePopup),
                     _ => None,
                 },
                 InputMode::Editing => match &mut self.popup {
@@ -201,7 +214,7 @@ impl Tui {
                         (KeyModifiers::CONTROL, KeyCode::Char('c')) => Some(Message::Quit),
                         _ => Some(Message::HandleInput(event)),
                     },
-                    None => None,
+                    _ => None,
                 },
             }
         } else {
@@ -304,11 +317,7 @@ fn book_to_row(book: &Book) -> Row<'_> {
         book.title.clone(),
         book.author.surname.clone(),
         format!("{:?}", book.status),
-        book.tags
-            .iter()
-            .cloned()
-            .collect::<Vec<_>>()
-            .join(", "),
+        book.tags.iter().cloned().collect::<Vec<_>>().join(", "),
     ]
     .into_iter()
     .map(|s| Cell::new(format!("{vert_pad}{s}")))

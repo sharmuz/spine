@@ -11,7 +11,7 @@ Or, more like a list of issues and features I may address at some point :)
     - ~~Rename existing Popup to FilterPopup~~
     - ~~Create Popup ~~trait~~ enum~~
     - ~~Move to separate module popup.rs~~
-  - Create ControlsPopup to show keyboard shortcuts
+  - ~~Create ShortcutsPopup to show keyboard shortcuts~~
   - Remove magic numbers:
     - Popup area and cursor position
     - `Table` widths

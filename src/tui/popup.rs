@@ -10,6 +10,7 @@ use tui_input::Input;
 #[derive(Debug)]
 pub(super) enum Popup {
     Filter(FilterPopup),
+    Shortcuts(ShortcutsPopup),
 }
 
 impl Popup {
@@ -24,6 +25,7 @@ impl Popup {
     pub(super) const fn is_editable(&self) -> bool {
         match self {
             Self::Filter(_) => true,
+            Self::Shortcuts(_) => false,
         }
     }
 }
@@ -35,6 +37,7 @@ impl Widget for &Popup {
     {
         match self {
             Popup::Filter(p) => p.render(area, buf),
+            Popup::Shortcuts(p) => p.render(area, buf),
         }
     }
 }
@@ -64,5 +67,29 @@ impl FilterPopup {
         ]))
         .block(block)
         .render(area, buf);
+    }
+}
+
+#[derive(Debug, Default)]
+pub(super) struct ShortcutsPopup {
+    pub(super) title: String,
+}
+
+impl ShortcutsPopup {
+    pub(super) fn render(&self, area: Rect, buf: &mut Buffer) {
+        Clear.render(area, buf);
+        let instructions = Line::from(vec![" Close ".into(), "<Esc> ".blue().bold()]);
+        let block = Block::bordered()
+            .title(Line::from(self.title.clone()).centered())
+            .title_bottom(instructions.centered());
+        Paragraph::new(vec![
+            Line::from(" Show books READ        <r>"),
+            Line::from(" Show books WANT        <w>"),
+            Line::from(" Show books READING     <g>"),
+            Line::from(" Filter books by...     <f>"),
+            Line::from(" Clear filters          <c>"),
+        ])
+            .block(block)
+            .render(area, buf);
     }
 }
